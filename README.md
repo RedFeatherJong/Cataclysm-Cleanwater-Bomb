@@ -1,7 +1,7 @@
 # 大灾变：净化协议（Cataclysm: Cleanwater Bomb）
 
 本项目是基于  
-:contentReference[oaicite:0]{index=0}  
+[CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA)  
 `cdda/master` 分支 commit：**221c786e7d**  
 的独立分支项目。
 
@@ -44,7 +44,7 @@
 ## 项目定位
 
 - 类型：后启示录生存 Roguelike
-- 基础版本：:contentReference[oaicite:1]{index=1}（commit 221c786e7d）
+- 基础版本：[CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA)（commit 221c786e7d）
 - 开发语言：以中文为主（设计与文档）
 - 状态：独立 fork / 实验性分支
 
@@ -53,10 +53,10 @@
 ## 与原作关系
 
 本项目基于  
-:contentReference[oaicite:2]{index=2}  
+[CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA)  
 并遵循其开源协议。
 
-源码托管平台：:contentReference[oaicite:3]{index=3}
+源码托管平台：[LYHGLYTX/Cataclysm-Cleanwater-Bomb](https://github.com/LYHGLYTX/Cataclysm-Cleanwater-Bomb)
 
 本项目属于“设计导向型 fork”，而非内容搬运或简单修复分支。
 
@@ -109,8 +109,8 @@
 
 ## 原项目
 
-:contentReference[oaicite:4]{index=4}  
-:contentReference[oaicite:5]{index=5}  
+- [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA)（上游开源项目）
+- [LYHGLYTX/Cataclysm-Cleanwater-Bomb](https://github.com/LYHGLYTX/Cataclysm-Cleanwater-Bomb)（本项目仓库）
 
 ---
 
