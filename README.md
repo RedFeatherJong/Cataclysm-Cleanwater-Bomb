@@ -1,110 +1,112 @@
-# Cataclysm: Dark Days Ahead
+# Cataclysm: Cleanwater Bomb（大灾变：净化协议）
 
-Cataclysm: Dark Days Ahead is a turn-based survival game set in a post-apocalyptic world. While some have described it as a "zombie game", there is far more to Cataclysm than that. Struggle to survive in a harsh, persistent, procedurally generated world. Scavenge the remnants of a dead civilization for food, equipment, or, if you are lucky, a vehicle with a full tank of gas to get you the hell out of Dodge. Fight to defeat or escape from a wide variety of powerful monstrosities, from zombies to giant insects to killer robots and things far stranger and deadlier, and against the others like yourself, who want what you have...
+本项目是基于  
+:contentReference[oaicite:0]{index=0}  
+2026-05-30 实验版本的独立分支。
 
-<p align="center">
-    <img src="./data/screenshots/ultica-showcase-sep-2021.png" alt="Tileset: Ultica">
-</p>
+## 项目概述
 
-## Downloads
+**Cataclysm: Cleanwater Bomb（大灾变：净化协议）** 是一个以 CDDA 为基础的实验性分支项目，在保留原作高复杂度生存系统的前提下，围绕“现实逻辑一致性”与“机制可解释性”进行系统性调整与扩展。
 
-**Releases** - [Stable](https://cataclysmdda.org/releases/) | [Experimental](https://cataclysmdda.org/experimental/)
+本项目不以简化游戏为目标，而是尝试在不破坏原有生存压力结构的情况下，减少不合理机制与不可解释设计，使整体体验更接近“可信的后启示录生存模拟”。
 
-**Source** - The source can be downloaded as a [.zip archive](https://github.com/CleverRaven/Cataclysm-DDA/archive/master.zip), or cloned from our [GitHub repo](https://github.com/CleverRaven/Cataclysm-DDA/).
+---
 
-[![General build matrix](https://github.com/CleverRaven/Cataclysm-DDA/actions/workflows/matrix.yml/badge.svg)](https://github.com/CleverRaven/Cataclysm-DDA/actions/workflows/matrix.yml)
-[![Coverage Status](https://coveralls.io/repos/github/CleverRaven/Cataclysm-DDA/badge.svg?branch=master)](https://coveralls.io/github/CleverRaven/Cataclysm-DDA?branch=master)
-[![Open Source Helpers](https://www.codetriage.com/cleverraven/cataclysm-dda/badges/users.svg)](https://www.codetriage.com/cleverraven/cataclysm-dda)
-[![Commit Activity](https://img.shields.io/github/commit-activity/m/CleverRaven/Cataclysm-DDA)](https://github.com/CleverRaven/Cataclysm-DDA/graphs/contributors)
-[![Lines of Code](https://tokei.rs/b1/github/CleverRaven/Cataclysm-DDA?category=code)](https://github.com/XAMPPRocky/tokei)
-[![TODOs](https://badgen.net/https/api.tickgit.com/badgen/github.com/CleverRaven/Cataclysm-DDA)](https://www.tickgit.com/browse?repo=github.com/CleverRaven/Cataclysm-DDA)
+## 核心设计原则
 
-### Packaging status
+本分支的开发遵循以下约束：
 
-#### Arch Linux
+### 1. 现实逻辑一致性优先
+所有新增或修改机制应尽可能符合现实世界的物理、生理或工程逻辑，并能够被解释。
 
-Ncurses and tiles versions are available in the [community repos](https://www.archlinux.org/packages/?q=cataclysm-dda).
+### 2. 机制可解释性
+系统行为必须具备明确原因链，而不是仅依赖隐藏数值或纯游戏性规则。
 
-```sh
-sudo pacman -S cataclysm-dda
-sudo pacman -S cataclysm-dda-tiles
-```
+### 3. 保留 CDDA 核心复杂度
+不削弱系统交互深度，不移除生存压力结构，不简化为轻量化体验。
 
-#### Fedora
+### 4. 玩家体验非对抗性优化
+避免因信息不透明或非预期惩罚导致的“无意义失败”，但保留合理风险与挑战。
 
-Ncurses and tiles versions are available in the [official repos](https://src.fedoraproject.org/rpms/cataclysm-dda).
+### 5. 渐进式演化
+所有改动以模块化方式推进，避免破坏上游结构兼容性。
 
-```sh
-sudo dnf install cataclysm-dda
-```
+---
 
-#### Debian / Ubuntu
+## 项目定位
 
-Ncurses and tiles versions are available in the [official repos](https://tracker.debian.org/pkg/cataclysm-dda).
+- 类型：后启示录生存 Roguelike
+- 基础版本：CDDA 实验版（2026-05-30）
+- 语言：以中文为主开发与设计语言
+- 状态：独立分支（Fork-based development）
 
-```sh
-sudo apt install cataclysm-dda-curses cataclysm-dda-sdl
-```
+---
 
-#### Flatpak
+## 与原作关系
 
-Download from [Flathub](https://flathub.org/apps/org.cataclysmdda.CataclysmDDA).
+本项目基于  
+:contentReference[oaicite:1]{index=1}  
+并遵循其开源协议。
 
-## Compile
+源码托管平台：:contentReference[oaicite:2]{index=2}
 
-Please read [COMPILING.md](doc/c++/COMPILING.md) - it covers general information and more specific recipes for Linux, OS X, Windows and BSD. See [COMPILER_SUPPORT.md](doc/c++/COMPILER_SUPPORT.md) for details on which compilers we support. And you can always dig for more information in [doc/](https://github.com/CleverRaven/Cataclysm-DDA/tree/master/doc).
+本分支属于“设计导向型 fork”，而非简单的 bugfix 或内容扩展。
 
-We also have the following build guides:
-* Building on Windows with `MSYS2` at [COMPILING-MSYS.md](doc/c++/COMPILING-MSYS.md)
-* Building on Windows with `vcpkg` at [COMPILING-VS-VCPKG.md](doc/c++/COMPILING-VS-VCPKG.md)
-* Building with `cmake` at [COMPILING-CMAKE.md](doc/c++/COMPILING-CMAKE.md)  (*unofficial guide*)
+---
 
-## Contribute
+## 设计边界说明（重要）
 
-Cataclysm: Dark Days Ahead is the result of contributions from over 1000 volunteers under the Creative Commons Attribution ShareAlike 3.0 license. The code and content of the game is free to use, modify, and redistribute for any purpose whatsoever. See https://creativecommons.org/licenses/by-sa/3.0/ for details.
-Some code distributed with the project is not part of the project and is released under different software licenses; the files covered by different software licenses have their own license notices.
+为避免目标漂移，本项目明确以下边界：
 
-Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+- 不以降低难度为目标
+- 不移除核心生存压力机制
+- 不追求与上游完全兼容
+- 不进行无依据的数值“手感优化”
 
-Special thanks to the contributors, including but not limited to, people below:
-<a href="https://github.com/cleverraven/cataclysm-dda/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=cleverraven/cataclysm-dda" />
-</a>
+本项目的核心是：
+> 在复杂系统中引入可解释性，而非降低复杂度本身。
 
-Made with [contrib.rocks](https://contrib.rocks).
+---
 
-## Community
+## 当前状态
 
-Forums:
-https://discourse.cataclysmdda.org
+项目处于早期分支阶段，以下内容持续演进中：
 
-GitHub repo:
-https://github.com/CleverRaven/Cataclysm-DDA
+- 机制重构
+- 生存系统逻辑整理
+- 部分数值体系校准
+- 中文化开发环境完善
 
-IRC:
-`#CataclysmDDA` on [Libera Chat](https://libera.chat), https://web.libera.chat/#CataclysmDDA
+---
 
-Official Discord:
-https://discord.gg/jFEc7Yp
+## 贡献方式
 
-## Frequently Asked Questions
+欢迎基于现实逻辑与系统设计提出改动建议。
 
-#### Is there a tutorial?
+建议提交内容包括：
+- 机制逻辑问题说明
+- 可验证的现实依据
+- 对游戏性影响分析
 
-Yes, you can find the tutorial in the **Special** menu at the main menu (be aware that due to many code changes the tutorial may not function). You can also access documentation in-game via the `?` key.
+---
 
-#### How can I change the key bindings?
+## 许可协议
 
-Press the `?` key, followed by the `1` key to see the full list of key commands. Press the `+` key to add a key binding, select which action with the corresponding letter key `a-w`, and then the key you wish to assign to that action.
+本项目继承原作许可协议：
 
-#### How can I start a new world?
+- CC-BY-SA 3.0 及兼容条款
 
-**World** on the main menu will generate a fresh world for you. Select **Create World**.
+详见原项目仓库说明。
 
-#### I've found a bug. What should I do?
+---
 
-Please submit an issue on [our GitHub page](https://github.com/CleverRaven/Cataclysm-DDA/issues/) using [bug report template](https://github.com/CleverRaven/Cataclysm-DDA/issues/new?template=bug_report.yaml). If you're not able to, send an email to `kevin.granade@gmail.com`.
+## 原项目
 
-#### I would like to make a suggestion. What should I do?
+:contentReference[oaicite:3]{index=3}  
+:contentReference[oaicite:4]{index=4}
 
-Please submit an issue on [our GitHub page](https://github.com/CleverRaven/Cataclysm-DDA/issues/) using [feature request template](https://github.com/CleverRaven/Cataclysm-DDA/issues/new?template=feature_request.yaml).
+---
+
+## 项目一句话定义
+
+一个在 CDDA 框架上，以现实一致性与机制可解释性为约束条件进行重构的生存模拟分支。
