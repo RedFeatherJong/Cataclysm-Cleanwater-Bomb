@@ -275,7 +275,9 @@
     "symbol": ",",
     "color": "light_gray",
     "qualities": [ [ "HAMMER", 1 ] ],
-    "melee_damage": { "bash": 8 }
+    "melee_damage": { "bash": 8 },
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "id": "steel_lump",
