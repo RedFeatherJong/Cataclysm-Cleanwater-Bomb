@@ -7,15 +7,15 @@
 <color_light_cyan>   \     \____ / __ \_ |  |   / __ \_\  \___ |  |__ \___  | \___ \ |  Y Y  \    </color>
 <color_light_cyan>    \______  /(____  / |__|  (____  / \___  >|____/ / ____|/____  >|__|_|  /    </color>
 <color_light_cyan>           \/      \/             \/      \/        \/          \/       \/     </color>
-<color_light_blue>    ________                   .__      ________                                </color>
-<color_light_blue>    \______ \  _____   _______ |  | __  \______ \  _____    ___.__   ______     </color>
-<color_light_blue>     |    |  \ \__  \  \_  __ \|  |/ /   |    |  \ \__  \  <   |  | /  ___/     </color>
-<color_light_blue>     |    `   \ / __ \_ |  | \/|    <    |    `   \ / __ \_ \___  | \___ \      </color>
-<color_light_blue>    /_______  /(____  / |__|   |__|_ \  /_______  /(____  / / ____|/____  >     </color>
-<color_light_blue>            \/      \/              \/          \/      \/  \/          \/      </color>
-<color_light_blue>                     _____   .__                         .___                   </color>
-<color_light_blue>                    /  _  \  |  |__    ____  _____     __| _/                   </color>
-<color_light_blue>                   /  /_\  \ |  |  \ _/ __ \ \__  \   / __ |                    </color>
-<color_light_blue>                  /    |    \|   Y  \\  ___/  / __ \_/ /_/ |                    </color>
-<color_light_blue>                  \____|__  /|___|  / \___  >(____  /\____ |                    </color>
-<color_light_blue>                          \/      \/      \/      \/      \/                    </color>
+
+<color_light_blue>                ____ _                               _              
+<color_light_blue>               / ___| | ___  __ _ _ ____      ____ _| |_ ___ _ __               </color>
+<color_light_blue>              | |   | |/ _ \/ _` | '_ \ \ /\ / / _` | __/ _ \ '__|              </color>
+<color_light_blue>              | |___| |  __/ (_| | | | \ V  V / (_| | ||  __/ |                 </color>
+<color_light_blue>               \____|_|\___|\__,_|_| |_|\_/\_/ \__,_|\__\___|_|                 </color>
+
+<color_light_blue>                           ____                  _                              </color>
+<color_light_blue>                          | __ )  ___  _ __ ___ | |__                           </color>
+<color_light_blue>                          |  _ \ / _ \| '_ ` _ \| '_ \                          </color>
+<color_light_blue>                          | |_) | (_) | | | | | | |_) |                         </color>
+<color_light_blue>                          |____/ \___/|_| |_| |_|_.__/                          </color>                                                                                              
