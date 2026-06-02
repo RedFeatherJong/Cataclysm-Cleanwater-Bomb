@@ -1952,8 +1952,8 @@ void map::monster_in_field( monster &z )
                         z.add_effect( effect_onfire, 1_turns * rng( dam / 2, dam * 2 ) );
                     }
                 }
-        }
             }
+        }
         if( cur_field_type == fd_smoke ) {
             if( !z.has_flag( mon_flag_NO_BREATHE ) ) {
                 if( cur.get_field_intensity() == 3 ) {
