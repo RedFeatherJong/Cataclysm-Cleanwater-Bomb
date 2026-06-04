@@ -761,32 +761,86 @@ void Character::update_bodytemp()
 
         update_frostbite( bp, bp_windpower, warmth_per_bp );
 
-        // Warn the player if condition worsens
-        if( temp_before > BODYTEMP_FREEZING && temp_after < BODYTEMP_FREEZING ) {
-            //~ %s is bodypart
-            add_msg_if_player( m_warning, _( "You feel your %s beginning to go numb from the cold!" ),
-                               body_part_name( bp ) );
-        } else if( temp_before > BODYTEMP_VERY_COLD && temp_after < BODYTEMP_VERY_COLD ) {
-            //~ %s is bodypart
-            add_msg_if_player( m_warning, _( "You feel your %s getting very cold." ),
-                               body_part_name( bp ) );
-        } else if( temp_before > BODYTEMP_COLD && temp_after < BODYTEMP_COLD ) {
-            //~ %s is bodypart
-            add_msg_if_player( m_warning, _( "You feel your %s getting chilly." ),
-                               body_part_name( bp ) );
-        } else if( temp_before < BODYTEMP_SCORCHING && temp_after > BODYTEMP_SCORCHING ) {
-            //~ %s is bodypart
-            add_msg_if_player( m_bad, _( "You feel your %s getting red hot from the heat!" ),
-                               body_part_name( bp ) );
-        } else if( temp_before < BODYTEMP_VERY_HOT && temp_after > BODYTEMP_VERY_HOT ) {
-            //~ %s is bodypart
-            add_msg_if_player( m_warning, _( "You feel your %s getting very hot." ),
-                               body_part_name( bp ) );
-        } else if( temp_before < BODYTEMP_HOT && temp_after > BODYTEMP_HOT ) {
-            //~ %s is bodypart
-            add_msg_if_player( m_warning, _( "You feel your %s getting warm." ),
-                               body_part_name( bp ) );
+        // Warn the player if condition worsens.
+        // To avoid flooding the log when a body part's temperature hovers around a
+        // threshold, these messages are throttled: a message is shown if the body part
+        // reaches a dangerous tier (freezing / red hot), if it reaches a different tier
+        // than the one last announced for that part (a large or new change), or if enough
+        // time has passed since the last message for that part. See temp_message_record.
+        const auto temp_tier = []( const units::temperature & t ) -> int {
+            if( t < BODYTEMP_FREEZING )
+            {
+                return -3;
+            } else if( t < BODYTEMP_VERY_COLD )
+            {
+                return -2;
+            } else if( t < BODYTEMP_COLD )
+            {
+                return -1;
+            } else if( t > BODYTEMP_SCORCHING )
+            {
+                return 3;
+            } else if( t > BODYTEMP_VERY_HOT )
+            {
+                return 2;
+            } else if( t > BODYTEMP_HOT )
+            {
+                return 1;
+            }
+            return 0;
+        };
+
+        const int tier_before = temp_tier( temp_before );
+        const int tier_after = temp_tier( temp_after );
+        // Only warn when crossing a threshold in the worsening direction (further from comfort).
+        const bool worsening = ( tier_after > 0 && tier_after > tier_before ) ||
+                               ( tier_after < 0 && tier_after < tier_before );
+        if( worsening ) {
+            constexpr time_duration temp_message_cooldown = 5_minutes;
+            const auto rec = temp_message_record.find( bp );
+            const bool is_danger = tier_after <= -3 || tier_after >= 3;
+            const bool new_tier = rec == temp_message_record.end() || rec->second.first != tier_after;
+            const bool cooled_down = rec == temp_message_record.end() ||
+                                     calendar::turn - rec->second.second >= temp_message_cooldown;
+            if( is_danger || new_tier || cooled_down ) {
+                switch( tier_after ) {
+                    case -3:
+                        //~ %s is bodypart
+                        add_msg_if_player( m_warning, _( "You feel your %s beginning to go numb from the cold!" ),
+                                           body_part_name( bp ) );
+                        break;
+                    case -2:
+                        //~ %s is bodypart
+                        add_msg_if_player( m_warning, _( "You feel your %s getting very cold." ),
+                                           body_part_name( bp ) );
+                        break;
+                    case -1:
+                        //~ %s is bodypart
+                        add_msg_if_player( m_warning, _( "You feel your %s getting chilly." ),
+                                           body_part_name( bp ) );
+                        break;
+                    case 3:
+                        //~ %s is bodypart
+                        add_msg_if_player( m_bad, _( "You feel your %s getting red hot from the heat!" ),
+                                           body_part_name( bp ) );
+                        break;
+                    case 2:
+                        //~ %s is bodypart
+                        add_msg_if_player( m_warning, _( "You feel your %s getting very hot." ),
+                                           body_part_name( bp ) );
+                        break;
+                    case 1:
+                        //~ %s is bodypart
+                        add_msg_if_player( m_warning, _( "You feel your %s getting warm." ),
+                                           body_part_name( bp ) );
+                        break;
+                    default:
+                        break;
+                }
+                temp_message_record[bp] = std::make_pair( tier_after, calendar::turn );
+            }
         }
+
 
         // Note: Numbers are based off of BODYTEMP at the top of weather.h
         // If torso is BODYTEMP_COLD which is 34C, the early stages of hypothermia begin
