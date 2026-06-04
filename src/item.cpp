@@ -1057,24 +1057,28 @@ void item::remove_var( const std::string &key )
 diag_value const &item::get_value( std::string_view name ) const
 {
     static diag_value const null_val;
-    if( item_vars.empty() ) {
-        return null_val;
-    }
-    return global_variables::_common_get_value( std::string( name ), item_vars );
-
+    diag_value const *ret = maybe_get_value( name );
+    return ret ? *ret : null_val;
 }
 
 diag_value const *item::maybe_get_value( std::string_view name ) const
 {
     if( item_vars.empty() ) {
-    return nullptr;
-}
-return global_variables::_common_maybe_get_value( std::string( name ), item_vars );
+        return nullptr;
+    }
+    // Reuse a per-thread buffer so the string_view -> string conversion needed
+    // for the unordered_map lookup (C++17 has no heterogeneous lookup) does not
+    // allocate on every call. item::volume() hits this path constantly, so the
+    // previous std::string( name ) temporary showed up as a major new/delete hotspot.
+    thread_local std::string key_buf;
+    key_buf.assign( name );
+    auto it = item_vars.find( key_buf );
+    return it == item_vars.end() ? nullptr : &it->second;
 }
 
 bool item::has_var( std::string_view name ) const
 {
-    return !item_vars.empty() && item_vars.count( std::string( name ) ) > 0;
+    return maybe_get_value( name ) != nullptr;
 }
 
 void item::erase_var( const std::string &name )
