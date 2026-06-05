@@ -1,6 +1,12 @@
 [
   {
     "type": "ammunition_type",
+    "id": "bolt_heavy",
+    "name": "ballista bolts",
+    "default": "ammo_ballista_iron"
+  },
+  {
+    "type": "ammunition_type",
     "id": "458wm",
     "name": ".458 Winchester Magnum",
     "default": "458wm"
