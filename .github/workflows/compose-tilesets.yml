@@ -115,6 +115,12 @@ jobs:
             compose_args: --use-all
             tileset_repo: pixel-32/CDDA-tileset
             tileset_src_checkout: ""
+          - name: MSX++UndeadPeopleEdition
+            tileset_repo: LYHGLYTX/CCB-UndeadPeople-Tileset
+            tileset_ref: v1.0
+            tileset_dir: gfx/MSX++UnDeadPeopleEdition
+            precomposed: true
+            tileset_src_checkout: ""
 
     name: Compose tileset
     runs-on: ubuntu-latest
@@ -134,6 +140,7 @@ jobs:
       - run: pip install pyvips
 
       - name: Clone tileset repo
+        if: matrix.precomposed != true
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           repository: ${{ matrix.tileset_repo }}
@@ -143,7 +150,18 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Clone precomposed tileset repo
+        if: matrix.precomposed == true
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: ${{ matrix.tileset_repo }}
+          ref: ${{ matrix.tileset_ref || 'master' }}
+          path: precomposed-tileset
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Build ${{ matrix.name }}
+        if: matrix.precomposed != true
         run: |
           export SOURCE="${{github.workspace}}/build-tilesets/${{ matrix.tileset_dir }}"
           export DEST="${{github.workspace}}/gfx/${{ matrix.name }}"
@@ -152,6 +170,14 @@ jobs:
           mv -v "$SOURCE/tileset.txt" "$DEST/"
           [ -f "$SOURCE/fallback.png"  ] && mv -v "$SOURCE/fallback.png" "$DEST/" || echo "No fallback.png for ${{ matrix.name }}"
           [ -f "$SOURCE/layering.json" ] && mv -v "$SOURCE/layering.json" "$DEST/" || echo "No layering.json for ${{ matrix.name }}"
+
+      - name: Copy precomposed ${{ matrix.name }}
+        if: matrix.precomposed == true
+        run: |
+          export SOURCE="${{github.workspace}}/precomposed-tileset/${{ matrix.tileset_dir }}"
+          export DEST="${{github.workspace}}/gfx/${{ matrix.name }}"
+          mkdir -p "$DEST"
+          cp -r "$SOURCE"/* "$DEST/"
 
       - name: Store artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
