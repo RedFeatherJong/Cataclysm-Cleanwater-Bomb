@@ -633,7 +633,17 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
     if( here.draw_points_cache_dirty ) {
         here.draw_points_cache_dirty = false;
         // overlay_strings and color_blocks are generated with draw_points and thus are cleared together
-        here.draw_points_cache.clear();
+        // Soft clear: keep the z/row tree nodes and each row's vector capacity so
+        // the per-move rebuild reuses last frame's buffers instead of freeing and
+        // reallocating every step. Freeing here was the dominant movement-time cost
+        // (profiled: std::map _Erase_tree + vector reserve/realloc churn). All access
+        // is via operator[], so leftover empty rows are indistinguishable from absent.
+        for( std::pair<const int, std::map<int, std::vector<tile_render_info>>> &z_entry :
+             here.draw_points_cache ) {
+            for( std::pair<const int, std::vector<tile_render_info>> &row_entry : z_entry.second ) {
+                row_entry.second.clear(); // clear() keeps capacity
+            }
+        }
         here.overlay_strings_cache.clear();
         here.color_blocks_cache = {};
 
