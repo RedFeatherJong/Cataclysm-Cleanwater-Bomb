@@ -812,7 +812,7 @@ class TileEntry:
                             full_id, self.filepath)
 
                 else:
-                    log.error(
+                    log.warning(
                         '%s encountered more than once, last time in %s',
                         full_id, self.filepath)
 
