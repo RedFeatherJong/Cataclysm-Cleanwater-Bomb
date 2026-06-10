@@ -271,13 +271,15 @@
     "type": "item_group",
     "container-item": "box_small",
     "//": "65 oz",
-    "items": [ { "item": "chem_borax", "count": 532 } ]
+    "items": [ { "item": "chem_borax", "count": 532 } ],
+    "on_overflow": "spill"
   },
   {
     "id": "borax_box_part",
     "type": "item_group",
     "container-item": "box_small",
-    "items": [ { "item": "chem_borax", "count": [ 100, 532 ] } ]
+    "items": [ { "item": "chem_borax", "count": [ 100, 532 ] } ],
+    "on_overflow": "spill"
   },
   {
     "id": "solder_wire_spool",
