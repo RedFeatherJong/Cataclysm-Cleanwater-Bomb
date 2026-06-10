@@ -389,7 +389,7 @@
     "reversible": false,
     "tools": [ [ [ "fakeitem_statue", -1 ] ] ],
     "components": [
-      [ [ "any_flag_landing_upgradekey", 6, "LIST"] ],
+      [ [ "any_flag_landing_upgradekey", 6, "LIST" ] ],
       [ [ "warptoken", 16 ] ],
       [
         [ "roadmap", 6 ],

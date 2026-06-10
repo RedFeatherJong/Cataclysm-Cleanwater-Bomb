@@ -169,12 +169,7 @@
             "effect": [
               { "npc_unset_flag": "PHOTOKIN_IRRADIATION_READY" },
               { "npc_set_flag": "IRRADIATED" },
-              {
-                "if": { "math": [ "n_item_rot() >= 0" ] },
-                "then": [
-                  { "math": [ "n_item_rot() *= 0.25" ] }
-                ]
-              }
+              { "if": { "math": [ "n_item_rot() >= 0" ] }, "then": [ { "math": [ "n_item_rot() *= 0.25" ] } ] }
             ]
           }
         ]

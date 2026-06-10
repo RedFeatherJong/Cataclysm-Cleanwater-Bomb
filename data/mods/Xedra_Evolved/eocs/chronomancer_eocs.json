@@ -187,7 +187,11 @@
               {
                 "if": { "math": [ "n_item_rot() >= 0" ] },
                 "then": [
-                  { "math": [ " n_item_rot('format':'raw','unit':'minute') -= min( n_item_rot('format':'raw','unit':'minute'), xedra_chron_spell_calc( u_spell_level('xedra_chronomancer_reverse_entropy'), 0.1, 1 ) )" ] }
+                  {
+                    "math": [
+                      " n_item_rot('format':'raw','unit':'minute') -= min( n_item_rot('format':'raw','unit':'minute'), xedra_chron_spell_calc( u_spell_level('xedra_chronomancer_reverse_entropy'), 0.1, 1 ) )"
+                    ]
+                  }
                 ]
               }
             ]
@@ -284,7 +288,11 @@
               {
                 "if": { "math": [ "n_item_rot() >= 0" ] },
                 "then": [
-                  { "math": [ " n_item_rot('format':'raw','unit':'minute') -= min( n_item_rot('format':'raw','unit':'minute'), xedra_chron_spell_calc( u_spell_level('xedra_chronomancer_rewrite_equipment_causality'), 10, 0 ) )" ] }
+                  {
+                    "math": [
+                      " n_item_rot('format':'raw','unit':'minute') -= min( n_item_rot('format':'raw','unit':'minute'), xedra_chron_spell_calc( u_spell_level('xedra_chronomancer_rewrite_equipment_causality'), 10, 0 ) )"
+                    ]
+                  }
                 ]
               }
             ]
