@@ -27,6 +27,14 @@
 #include <utility>
 #include <vector>
 
+#include "creature_tracker.h"
+#include "faction.h"
+#include "power_network.h"
+#include "scent_map.h"
+#include "mission.h"
+#include "timed_event.h"
+#include "kill_tracker.h"
+
 #include "achievement.h"
 #include "auto_note.h"
 #include "auto_pickup.h"
@@ -913,29 +921,123 @@ void game::quicksave()
 
 void game::quickload()
 {
-    const WORLD *active_world = world_generator->active_world;
-    if( active_world == nullptr ) {
+    const WORLD* active_world = world_generator->active_world;
+    if (active_world == nullptr) {
+        debugmsg("Quick load failed: No active world found.");
         return;
     }
-    std::string const world_name = active_world->world_name;
-    std::string const &save_id = u.get_save_id();
 
-    if( active_world->save_exists( save_t::from_save_id( save_id ) ) ) {
-        if( moves_since_last_save != 0 ) { // See if we need to reload anything
-            moves_since_last_save = 0;
-            last_save_timestamp = std::time( nullptr );
+    std::string const& save_id = u.get_save_id();
+    save_t save_file = save_t::from_save_id(save_id);
 
-            u.set_moves( 0 );
-            uquit = QUIT_NOSAVED;
-
-            main_menu::queued_world_to_load = world_name;
-            main_menu::queued_save_id_to_load = save_id;
-
-        }
-
-    } else {
-        popup_getkey( _( "No saves for current character yet." ) );
+    if (!active_world->save_exists(save_file)) {
+        debugmsg("Quick load failed: save file '%s' does not exist", save_file.base_path());
+        popup_getkey(_("No saves for current character yet."));
+        return;
     }
+    isdraw = false;
+
+    // 重置游戏状态
+    g->set_driving_view_offset(point_rel_ms::zero);
+
+    sfx::fade_audio_channel(sfx::channel::any, 300);
+    sfx::fade_audio_group(sfx::group::weather, 300);
+    sfx::fade_audio_group(sfx::group::time_of_day, 300);
+    sfx::fade_audio_group(sfx::group::context_themes, 300);
+    sfx::fade_audio_group(sfx::group::low_stamina, 300);
+
+    zone_manager::get_manager().clear();
+
+    MAPBUFFER.clear();
+    overmap_buffer.clear();
+
+    m = map();
+
+    // 重置各种 ID 计数器，保证新游戏中生成的 ID 从 1 开始
+    next_npc_id = character_id(1);
+    next_mission_id = 1;
+    next_item_uid = 1;
+    uquit = QUIT_NO;   // 退出类型设为“未退出”，表示游戏正常运行中
+    bVMonsterLookFire = true;   // 启用怪物开火视觉效果
+
+    // 根据选项设置永恒之夜或永恒之昼
+    calendar::set_eternal_night(::get_option<std::string>("ETERNAL_TIME_OF_DAY") == "night");
+    calendar::set_eternal_day(::get_option<std::string>("ETERNAL_TIME_OF_DAY") == "day");
+
+    // 设置纬度/经度，影响日照时长和季节变化
+    calendar::set_location(::get_option<float>("LATITUDE"), ::get_option<float>("LONGITUDE"));
+
+    // 初始化天气：晴朗
+    weather.weather_id = WEATHER_CLEAR;
+    // 首次天气变化时间：游戏开始后 30 分钟
+    weather.nextweather = calendar::start_of_game + 30_minutes;
+
+    // 自动安全模式：上次看到怪物以来的回合数（初始为0，表示未看到怪物）
+    turnssincelastmon = 0_turns;
+
+    // 清空声音系统
+    sounds::reset_sounds();
+    // 清空所有怪物（确保没有残留）
+    clear_zombies();
+    // 清空所有 NPC
+    critter_tracker->clear_npcs();
+    // 清空阵营管理器
+    faction_manager_ptr->clear();
+    // 清空电网数据
+    power_networks_ptr->clear();
+    // 清空所有任务
+    mission::clear_all();
+    // 清空消息历史
+    Messages::clear_messages();
+    // 重置定时事件管理器
+    timed_events = timed_event_manager();
+
+    // 清空滚动战斗文本（浮动的伤害数字等）
+    SCT.vSCT.clear();
+
+    // 清空统计信息
+    stats().clear();
+    // 清空击杀追踪器
+    kill_tracker_ptr->clear();
+    // 清空成就系统
+    achievements_tracker_ptr->clear();
+    // 清空事件链（效果触发的事件）
+    eoc_events_ptr->clear();
+    // 重置气味系统
+    scent.reset();
+    // 清空玩家的效果条件（例如突变引起的状态）
+    effect_on_conditions::clear(u);
+    // 重置角色面部表情为默认
+    u.character_mood_face(true);
+    // 重置远程车辆缓存时间
+    remoteveh_cache_time = calendar::before_time_starts;
+    // 重置远程车辆缓存指针
+    remoteveh_cache = nullptr;
+    // 清空全局变量（用于 EOC 脚本）
+    global_variables& globvars = get_globals();
+    globvars.clear_global_values();
+    // 清空唯一 NPC 列表（特殊命名 NPC，例如游戏开始时生成的特定人物）
+    unique_npcs.clear();
+    // 清除天气覆盖（强制指定天气）
+    get_weather().weather_override = WEATHER_NULL;
+
+    // 重新加载存档
+    try {
+        if (load(save_file)) {
+            add_msg(_("Quick load successful!"));
+            moves_since_last_save = 0;
+            last_save_timestamp = std::time(nullptr);
+        }
+        else {
+            debugmsg("Quick load failed: Unable to load save file '%s'", save_file.base_path());
+            popup_getkey(_("Quick load failed!"));
+        }
+    }
+    catch (const std::exception& e) {
+        debugmsg("Quick load failed: %s", e.what());
+        popup_getkey(_("Quick load failed: %s"), e.what());
+    }
+    isdraw = true;
 }
 
 void game::autosave()
