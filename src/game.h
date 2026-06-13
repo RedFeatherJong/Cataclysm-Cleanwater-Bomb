@@ -265,6 +265,9 @@ class game
         /** Returns false if saving failed. */
         bool save();
 
+        //用于在快速读取时跳过绘制的标志
+        bool isdraw = true;
+
         /** Returns a list of currently active character saves. */
         std::vector<std::string> list_active_saves();
         void write_memorial_file( std::string sLastWords );

@@ -3334,6 +3334,8 @@ bool game::has_blink_curses()
 
 void game::draw( ui_adaptor &ui )
 {
+    if (!isdraw) {return;}
+
     map &here = get_map();
 
     if( test_mode ) {
