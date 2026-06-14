@@ -69,7 +69,6 @@
 #include "json.h"
 #include "loading_ui.h"
 #include "magic_enchantment.h"
-#include "main_menu.h"
 #include "map.h"
 #include "mapbuffer.h"
 #include "memorial_logger.h"
@@ -83,6 +82,7 @@
 #include "pimpl.h"
 #include "popup.h"
 #include "safemode_ui.h"
+#include "save_snapshot.h"
 #if defined(TILES)
     #include "sdltiles.h"
 #endif
@@ -921,123 +921,148 @@ void game::quicksave()
 
 void game::quickload()
 {
-    const WORLD* active_world = world_generator->active_world;
-    if (active_world == nullptr) {
-        debugmsg("Quick load failed: No active world found.");
+    const WORLD *active_world = world_generator->active_world;
+    if( active_world == nullptr ) {
         return;
     }
 
-    std::string const& save_id = u.get_save_id();
-    save_t save_file = save_t::from_save_id(save_id);
+    const std::string &save_id = u.get_save_id();
+    const save_t save_file = save_t::from_save_id( save_id );
 
-    if (!active_world->save_exists(save_file)) {
-        debugmsg("Quick load failed: save file '%s' does not exist", save_file.base_path());
-        popup_getkey(_("No saves for current character yet."));
+    if( !active_world->save_exists( save_file ) ) {
+        popup_getkey( _( "No saves for current character yet." ) );
         return;
     }
-    isdraw = false;
 
-    // 重置游戏状态
-    g->set_driving_view_offset(point_rel_ms::zero);
+    if( moves_since_last_save == 0 ) {
+        // Nothing has happened since the last save; no need to reload.
+        return;
+    }
 
-    sfx::fade_audio_channel(sfx::channel::any, 300);
-    sfx::fade_audio_group(sfx::group::weather, 300);
-    sfx::fade_audio_group(sfx::group::time_of_day, 300);
-    sfx::fade_audio_group(sfx::group::context_themes, 300);
-    sfx::fade_audio_group(sfx::group::low_stamina, 300);
+    if( reload_active_save( save_file ) ) {
+        add_msg( _( "Quick load successful!" ) );
+        moves_since_last_save = 0;
+        last_save_timestamp = std::time( nullptr );
+    } else {
+        popup_getkey( _( "Quick load failed!" ) );
+    }
+}
 
-    zone_manager::get_manager().clear();
+void game::snapshot_menu()
+{
+    WORLD *active_world = world_generator->active_world;
+    if( active_world == nullptr ) {
+        return;
+    }
+    const cata_path world_dir = active_world->folder_path();
 
+    while( true ) {
+        const save_snapshot::menu_selection sel =
+            save_snapshot::query_snapshot_menu( world_dir, _( "Snapshots" ),
+                    _( "Load this snapshot" ) );
+
+        if( sel.action == save_snapshot::menu_action::none ) {
+            return;
+        }
+
+        if( sel.action == save_snapshot::menu_action::create ) {
+            // Persist current progress, then snapshot the whole world directory.
+            if( !save() ) {
+                popup_getkey( _( "Could not save the game before taking a snapshot." ) );
+                continue;
+            }
+            if( save_snapshot::make_snapshot( world_dir, sel.new_name, u.get_name(),
+                                              to_turn<int>( calendar::turn ) ) ) {
+                add_msg( _( "Snapshot \"%s\" saved." ), sel.new_name );
+            } else {
+                popup_getkey( _( "Failed to create the snapshot." ) );
+            }
+            continue;
+        }
+
+        if( sel.action == save_snapshot::menu_action::remove ) {
+            if( query_yn( _( "Permanently delete snapshot \"%s\"?" ), sel.chosen.name ) ) {
+                save_snapshot::delete_snapshot( world_dir, sel.chosen.dir_name );
+            }
+            continue;
+        }
+
+        // menu_action::load
+        if( !query_yn( _( "Load snapshot \"%s\"?  Unsaved progress will be lost." ),
+                       sel.chosen.name ) ) {
+            continue;
+        }
+
+        // Drop in-memory map/overmap buffers BEFORE touching the files on disk.
+        // On Windows the prefetcher can hold mmap handles on maps/*.zzip, which
+        // would make the restore's deletes fail; clearing here releases them.
+        MAPBUFFER.clear();
+        overmap_buffer.clear();
+        m = map();
+
+        if( !save_snapshot::restore_snapshot( world_dir, sel.chosen.dir_name ) ) {
+            popup_getkey( _( "Failed to restore the snapshot." ) );
+            return;
+        }
+        // The on-disk compression state may differ from before; force a re-probe
+        // so load() picks the right codec.
+        active_world->invalidate_compression_cache();
+
+        const save_t save_file = save_t::from_save_id( u.get_save_id() );
+        if( reload_active_save( save_file ) ) {
+            add_msg( _( "Snapshot \"%s\" loaded." ), sel.chosen.name );
+        } else {
+            popup_getkey( _( "Snapshot restored on disk, but reloading failed." ) );
+        }
+        return; // game state reloaded (or bailed to menu); leave the menu
+    }
+}
+
+void game::quit_to_last_snapshot()
+{
+    WORLD *active_world = world_generator->active_world;
+    if( active_world == nullptr ) {
+        return;
+    }
+    const cata_path world_dir = active_world->folder_path();
+
+    const std::vector<save_snapshot::snapshot_info> snaps =
+        save_snapshot::list_snapshots( world_dir );
+    if( snaps.empty() ) {
+        popup_getkey( _( "There are no snapshots to return to." ) );
+        return;
+    }
+
+    // list_snapshots() is sorted newest-first.
+    const save_snapshot::snapshot_info &latest = snaps.front();
+
+    if( !query_yn(
+            _( "Quit to the most recent snapshot \"%s\"?  Progress since then will be lost." ),
+            latest.name ) ) {
+        return;
+    }
+
+    // Drop in-memory buffers and the live map BEFORE touching files: it releases
+    // any mmap handles (so the restore's deletes succeed on Windows) and avoids
+    // leaving the map holding freed submap pointers.
     MAPBUFFER.clear();
     overmap_buffer.clear();
-
     m = map();
 
-    // 重置各种 ID 计数器，保证新游戏中生成的 ID 从 1 开始
-    next_npc_id = character_id(1);
-    next_mission_id = 1;
-    next_item_uid = 1;
-    uquit = QUIT_NO;   // 退出类型设为“未退出”，表示游戏正常运行中
-    bVMonsterLookFire = true;   // 启用怪物开火视觉效果
-
-    // 根据选项设置永恒之夜或永恒之昼
-    calendar::set_eternal_night(::get_option<std::string>("ETERNAL_TIME_OF_DAY") == "night");
-    calendar::set_eternal_day(::get_option<std::string>("ETERNAL_TIME_OF_DAY") == "day");
-
-    // 设置纬度/经度，影响日照时长和季节变化
-    calendar::set_location(::get_option<float>("LATITUDE"), ::get_option<float>("LONGITUDE"));
-
-    // 初始化天气：晴朗
-    weather.weather_id = WEATHER_CLEAR;
-    // 首次天气变化时间：游戏开始后 30 分钟
-    weather.nextweather = calendar::start_of_game + 30_minutes;
-
-    // 自动安全模式：上次看到怪物以来的回合数（初始为0，表示未看到怪物）
-    turnssincelastmon = 0_turns;
-
-    // 清空声音系统
-    sounds::reset_sounds();
-    // 清空所有怪物（确保没有残留）
-    clear_zombies();
-    // 清空所有 NPC
-    critter_tracker->clear_npcs();
-    // 清空阵营管理器
-    faction_manager_ptr->clear();
-    // 清空电网数据
-    power_networks_ptr->clear();
-    // 清空所有任务
-    mission::clear_all();
-    // 清空消息历史
-    Messages::clear_messages();
-    // 重置定时事件管理器
-    timed_events = timed_event_manager();
-
-    // 清空滚动战斗文本（浮动的伤害数字等）
-    SCT.vSCT.clear();
-
-    // 清空统计信息
-    stats().clear();
-    // 清空击杀追踪器
-    kill_tracker_ptr->clear();
-    // 清空成就系统
-    achievements_tracker_ptr->clear();
-    // 清空事件链（效果触发的事件）
-    eoc_events_ptr->clear();
-    // 重置气味系统
-    scent.reset();
-    // 清空玩家的效果条件（例如突变引起的状态）
-    effect_on_conditions::clear(u);
-    // 重置角色面部表情为默认
-    u.character_mood_face(true);
-    // 重置远程车辆缓存时间
-    remoteveh_cache_time = calendar::before_time_starts;
-    // 重置远程车辆缓存指针
-    remoteveh_cache = nullptr;
-    // 清空全局变量（用于 EOC 脚本）
-    global_variables& globvars = get_globals();
-    globvars.clear_global_values();
-    // 清空唯一 NPC 列表（特殊命名 NPC，例如游戏开始时生成的特定人物）
-    unique_npcs.clear();
-    // 清除天气覆盖（强制指定天气）
-    get_weather().weather_override = WEATHER_NULL;
-
-    // 重新加载存档
-    try {
-        if (load(save_file)) {
-            add_msg(_("Quick load successful!"));
-            moves_since_last_save = 0;
-            last_save_timestamp = std::time(nullptr);
-        }
-        else {
-            debugmsg("Quick load failed: Unable to load save file '%s'", save_file.base_path());
-            popup_getkey(_("Quick load failed!"));
-        }
+    // Restore the snapshot's files over the world, then quit WITHOUT saving so
+    // the discarded progress is never written back. The on-disk world is now a
+    // consistent snapshot state, which avoids the corruption risk of a plain
+    // "quit without saving". The restored save is loaded next time the world is
+    // opened from the main menu. restore_snapshot is atomic: on failure the
+    // world is rolled back intact, but our in-memory state is already torn down,
+    // so quit to the main menu regardless.
+    if( !save_snapshot::restore_snapshot( world_dir, latest.dir_name ) ) {
+        popup_getkey( _( "Failed to restore the snapshot." ) );
     }
-    catch (const std::exception& e) {
-        debugmsg("Quick load failed: %s", e.what());
-        popup_getkey(_("Quick load failed: %s"), e.what());
-    }
-    isdraw = true;
+    active_world->invalidate_compression_cache();
+
+    u.set_moves( 0 );
+    uquit = QUIT_NOSAVED;
 }
 
 void game::autosave()
