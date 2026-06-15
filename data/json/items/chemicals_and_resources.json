@@ -54,8 +54,6 @@
     "weight": "2 g",
     "container": "bottle_plastic_small",
     "display_type": "BY_WEIGHT",
-    "stackable": true,
-    "display_type": "BY_WEIGHT",
     "stackable": true
   },
   {
