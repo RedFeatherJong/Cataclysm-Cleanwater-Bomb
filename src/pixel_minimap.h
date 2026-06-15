@@ -2,8 +2,8 @@
 #ifndef CATA_SRC_PIXEL_MINIMAP_H
 #define CATA_SRC_PIXEL_MINIMAP_H
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "coordinates.h"
@@ -123,7 +123,7 @@ class pixel_minimap
         class shared_texture_pool;
         std::unique_ptr<shared_texture_pool> tex_pool;
 
-        std::map<tripoint_abs_sm, submap_cache> cache;
+        std::unordered_map<tripoint_abs_sm, submap_cache> cache;
 
         bool has_blinking_beacons_ = false;
 
