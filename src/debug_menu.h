@@ -43,7 +43,7 @@ void open_console();
 
 void export_save_archive_and_game_report();
 
-void do_debug_quick_setup( bool flag_dirty = false );
+void do_debug_quick_setup();
 
 /* Splits a string by @param delimiter and push_back's the elements into _Container */
 template<typename Container>

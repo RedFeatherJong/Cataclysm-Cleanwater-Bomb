@@ -460,7 +460,6 @@ game::game() :
     scent( *scent_ptr ),
     timed_events( *timed_event_manager_ptr ),
     uquit( QUIT_NO ),
-    save_is_dirty( false ),
     safe_mode( SAFE_MODE_ON ),
     u_shared_ptr( &u, null_deleter{} ),
     next_npc_id( 1 ),
@@ -782,9 +781,6 @@ bool game::reload_active_save( const save_t &save_file )
 
     try {
         if( load( save_file ) ) {
-            // A freshly loaded save is internally consistent again, so a prior
-            // debug-induced "dirty" state no longer applies.
-            save_is_dirty = false;
             return true;
         }
         debugmsg( "In-place reload failed: unable to load save file '%s'", save_file.base_path() );

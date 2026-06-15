@@ -293,7 +293,6 @@ std::string enum_to_string<debug_menu::debug_menu_index>( debug_menu::debug_menu
         case debug_menu::debug_menu_index::EXPORT_FOLLOWER: return "EXPORT_FOLLOWER";
         case debug_menu::debug_menu_index::EXPORT_SELF: return "EXPORT_SELF";
 		case debug_menu::debug_menu_index::QUICK_SETUP: return "QUICK_SETUP";
-		case debug_menu::debug_menu_index::QUICK_SETUP_FLAG_DIRTY: return "QUICK_SETUP_FLAG_DIRTY";
 		case debug_menu::debug_menu_index::TOGGLE_SETUP_MUTATION: return "TOGGLE_SETUP_MUTATION";
 		case debug_menu::debug_menu_index::NORMALIZE_BODY_STAT: return "NORMALIZE_BODY_STAT";
 		case debug_menu::debug_menu_index::SIX_MILLION_DOLLAR_SURVIVOR: return "SIX_MILLION_DOLLAR_SURVIVOR";
@@ -1099,7 +1098,6 @@ static int quick_setup_uilist()
 {
     const std::vector<uilist_entry> uilist_initializer = {
         { uilist_entry( debug_menu_index::QUICK_SETUP, true, 'Q', _( "Quick setup…" ) ) },
-        { uilist_entry( debug_menu_index::QUICK_SETUP_FLAG_DIRTY, true, 'D', _( "Quick setup and flag save as dirty" ) ) },
         { uilist_entry( debug_menu_index::TOGGLE_SETUP_MUTATION, true, 't', _( "Toggle debug mutations" ) ) },
         { uilist_entry( debug_menu_index::NORMALIZE_BODY_STAT, true, 'n', _( "Normalize body stats" ) ) },
         { uilist_entry( debug_menu_index::SIX_MILLION_DOLLAR_SURVIVOR, true, 'B', _( "Install ALL bionics" ) ) },
@@ -4092,7 +4090,7 @@ void export_save_archive_and_game_report()
     game_report();
 }
 
-void do_debug_quick_setup( bool flag_dirty )
+void do_debug_quick_setup()
 {
     // Turn on debug mode. Some debug information displays require just this to be on, so we want it on. Save a few keypresses.
     debug_mode = true;
@@ -4111,9 +4109,6 @@ void do_debug_quick_setup( bool flag_dirty )
     map_reveal( static_cast<int>( om_vision_level::full ) );
     dialogue d( get_talker_for( get_avatar() ), nullptr );
     effect_on_condition_EOC_DEBUG_QUICK_SETUP->activate( d );
-    if( flag_dirty ) {
-        g->save_is_dirty = true;
-    }
 }
 
 const std::vector<debug_action_entry> &all_actions()
@@ -4831,9 +4826,8 @@ const std::vector<debug_action_entry> &all_actions()
             debug_menu_index::QUICKLOAD, translate_marker( "Quickload" ), "quickload load", "Game", []()
             {
                 if( query_yn(
-                        _( "Quickload without saving?  This will mark save as 'dirty' and disable future saving to prevent accidental overwriting save.  Also this may cause issues such as duplicated or missing items and vehicles!" ) ) ) {
+                        _( "Quickload without saving?  This may cause issues such as duplicated or missing items and vehicles!" ) ) ) {
                     g->quickload();
-                    g->save_is_dirty = true;
                 }
             }
         },
