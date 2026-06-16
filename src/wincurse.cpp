@@ -20,6 +20,7 @@
 #include "catacharset.h"
 #include "init.h"
 #include "input.h"
+#include "json.h"
 #include "path_info.h"
 #include "filesystem.h"
 #include "debug.h"
@@ -408,7 +409,10 @@ LRESULT CALLBACK ProcessMessages( HWND__ *hWnd, unsigned int Msg,
             return 0;
 
         case WM_DESTROY:
-            // A messy exit, but easy way to escape game loop
+            // A messy exit, but easy way to escape game loop.
+            // exit() bypasses main()'s unvisited-member guard (no stack unwind),
+            // so disable the report before global JsonObject destructors run.
+            Json::globally_report_unvisited_members( false );
             exit( 0 );
     }
 

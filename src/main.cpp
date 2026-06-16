@@ -148,6 +148,11 @@ void exit_handler( int s )
     const int old_timeout = inp_mngr.get_timeout();
     inp_mngr.reset_timeout();
     if( s != 2 || query_yn( _( "Really Quit?  All unsaved changes will be lost." ) ) ) {
+        // exit() below runs static destructors without unwinding main()'s stack,
+        // so the json_member_reporting_guard RAII object never fires. Disable the
+        // report here so leftover deferred JsonObjects don't crash in DebugLog
+        // during static destruction.
+        Json::globally_report_unvisited_members( false );
         deinitDebug();
 
         int exit_status = 0;
