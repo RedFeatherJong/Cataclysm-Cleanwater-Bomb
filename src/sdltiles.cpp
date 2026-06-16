@@ -6185,6 +6185,12 @@ static void CheckMessages()
         try_sdl_update();
     }
     if( quit ) {
+        // exit() runs static destructors without unwinding main's stack, so the
+        // RAII guard in main() never fires. If we quit mid-load, global factories
+        // still hold unparsed JsonObjects whose destructors would call
+        // report_unvisited() -> DebugLog() after the debug subsystem is gone,
+        // crashing. Disable the report globally before exiting.
+        Json::globally_report_unvisited_members( false );
         catacurses::endwin();
         exit( 0 );
     }

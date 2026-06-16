@@ -140,7 +140,18 @@ template<typename T>
 class generic_factory
 {
     public:
-        virtual ~generic_factory() = default;
+        virtual ~generic_factory() {
+            // When a global static factory is destroyed at program exit, its
+            // `deferred` list may still hold JsonObjects with unvisited members
+            // (e.g. the game exited before load_deferred()/reset() ran). Letting
+            // those JsonObjects destruct would call report_unvisited() ->
+            // debugmsg() -> DebugLog() after the debug subsystem has already been
+            // torn down, causing a crash. Suppress the reports first, mirroring
+            // reset().
+            for( std::pair<JsonObject, std::string> &deferred_json : deferred ) {
+                deferred_json.first.allow_omitted_members();
+            }
+        }
 
     private:
         DynamicDataLoader::deferred_json deferred;
