@@ -3715,9 +3715,21 @@ if( ( tmp.weight() / 113_gram ) > str * 15 )  {
     auto *mons = mounted_creature.get();
         str = mons->mech_str_addition() != 0 ? mons->mech_str_addition() : str;
     }
-    int ret = ( str * 10 ) / ( tmp.weight() >= 150_gram ? tmp.weight() / 113_gram : 10 -
-                               static_cast<int>(
-                                   tmp.weight() / 15_gram ) );
+    // Skill and high dexterity reduce the range penalty for very light items.
+    float light_item_coeff = 1.0f + 0.1f * get_skill_level( skill_throw );
+    const int dex = get_dex();
+    if( dex > 8 ) {
+        light_item_coeff += 0.08f * dex;
+    }
+
+    int ret;
+    if( tmp.weight() >= 150_gram ) {
+        ret = ( str * 10 ) / ( tmp.weight() / 113_gram );
+    } else {
+        int light_penalty = 10 - static_cast<int>( tmp.weight() / 15_gram );
+        light_penalty = std::max( 1, static_cast<int>( light_penalty / light_item_coeff ) );
+        ret = ( str * 10 ) / light_penalty;
+    }
     ret -= tmp.volume() / 1_liter;
     if( has_active_bionic( bio_railgun ) && tmp.made_of_any( ferric ) ) {
     ret *= 2;

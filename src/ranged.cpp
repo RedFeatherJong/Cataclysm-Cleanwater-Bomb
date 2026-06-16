@@ -1555,6 +1555,25 @@ static float throwing_skill_adjusted( const Character &guy )
     return skill_level;
 }
 
+// Weight-based thrown bash damage, scaled by throwing skill and dexterity so that
+// light items can approach the strength-based cap when the thrower is skilled.
+static double thrown_item_weight_damage( const Character &thrower, const item &thrown )
+{
+    const float weight_dmg = thrown.weight() / 100.0_gram;
+    const float skill = throwing_skill_adjusted( thrower );
+    const int dex = thrower.get_dex();
+
+    // Base 1.0; high skill and dexterity let the thrower get more damage out of
+    // light items without changing the low-stat balance.
+    const float velocity_factor = 1.0f
+                                  + 0.5f * ( skill / static_cast<float>( MAX_SKILL ) )
+                                  + 0.03f * std::max( 0, dex - 8 );
+
+    const double scaled_weight_dmg = weight_dmg * velocity_factor;
+    const double cap = thrower.thrown_item_adjusted_damage( thrown );
+    return std::min( scaled_weight_dmg, cap );
+}
+
 int Character::thrown_item_adjusted_damage( const item &thrown ) const
 {
     const std::optional<int> throw_assist = character_throw_assist( *this );
@@ -1587,8 +1606,7 @@ projectile Character::thrown_item_projectile( const item &thrown ) const
 int Character::thrown_item_total_damage_raw( const item &thrown ) const
 {
     projectile proj = thrown_item_projectile( thrown );
-    proj.impact.add_damage( damage_bash, std::min( thrown.weight() / 100.0_gram,
-                            static_cast<double>( thrown_item_adjusted_damage( thrown ) ) ) );
+    proj.impact.add_damage( damage_bash, thrown_item_weight_damage( *this, thrown ) );
     const int glass_portion = thrown.made_of( material_glass );
     const float glass_fraction = glass_portion / static_cast<float>( thrown.type->mat_portion_total );
     const units::volume volume = thrown.volume() * glass_fraction;
@@ -1637,11 +1655,18 @@ dealt_projectile_attack Character::throw_item( const tripoint_bub_ms &target, co
     damage_instance &impact = proj.impact;
     std::set<ammo_effect_str_id> &proj_effects = proj.proj_effects;
 
+    // Throwing skill and high dexterity/perception improve the critical hit multiplier.
+    proj.critical_multiplier += 0.15f * get_skill_level( skill_throw );
+    const int dex = get_dex();
+    const int per = get_per();
+    if( dex > 8 && per > 8 ) {
+        proj.critical_multiplier += 0.06f * std::min( dex, per );
+    }
+
     const bool do_railgun = has_active_bionic( bio_railgun ) && thrown.made_of_any( ferric ) &&
                             !throw_assist;
 
-    impact.add_damage( damage_bash, std::min( weight / 100.0_gram,
-                       static_cast<double>( thrown_item_adjusted_damage( thrown ) ) ) );
+    impact.add_damage( damage_bash, thrown_item_weight_damage( *this, thrown ) );
 
     impact.add_damage( damage_bash,
                        enchantment_cache->get_value_add( enchant_vals::mod::THROW_DAMAGE ) );
