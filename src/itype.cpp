@@ -13,6 +13,7 @@
 #include "item.h"
 #include "map.h"
 #include "material.h"
+#include "options.h"
 #include "recipe.h"
 #include "ret_val.h"
 #include "string_formatter.h"
@@ -131,11 +132,13 @@ std::string itype::item_measure_prefix( unsigned int quantity ) const
 {
     const std::string option = get_option<std::string>( "MEASURE_PREFIX" );
     std::string fmt;
-    if( option == "both")
+    if( option == "both") {
         fmt = "%1$s,%2$d";
-    else if( option == "unit")
+    } else if( option == "unit") {
         fmt = "%1$s";
-    else return std::to_string( quantity );
+    } else {
+        return std::to_string( quantity );
+    }
     if( display_type == item_display_type::BY_WEIGHT ) {
         return string_format( fmt, weight_to_string( weight * quantity, true, true ), quantity );
     } else if( display_type == item_display_type::BY_VOLUME ) {
