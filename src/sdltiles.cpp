@@ -474,10 +474,35 @@ static void detect_renderer_backend()
     const char *actual_name = props != 0
                               ? SDL_GetStringProperty( props, SDL_PROP_RENDERER_NAME_STRING, "" )
                               : "";
-    dbg( D_INFO ) << "SDL renderer in use: " << ( actual_name ? actual_name : "unknown" );
+    // Diagnostic: the selected renderer name alone is not enough to predict the
+    // mid-frame render-target-switch crash. When the renderer is "gpu", the real
+    // culprit is the backing SDL_gpu device driver (direct3d12 vs vulkan): the
+    // crash was only seen on direct3d12. Use DebugLog(..., DC_ALL) rather than the
+    // file-local dbg() macro: dbg() logs under category D_SDL, which is filtered
+    // out of debug.log by default, so it would never land. DC_ALL always shows.
+    const char *gpu_driver = "n/a";
+    SDL_GPUDevice *gpu_dev = props != 0
+                             ? static_cast<SDL_GPUDevice *>( SDL_GetPointerProperty(
+                                     props, SDL_PROP_RENDERER_GPU_DEVICE_POINTER, nullptr ) )
+                             : nullptr;
+    if( gpu_dev ) {
+        const char *drv = SDL_GetGPUDeviceDriver( gpu_dev );
+        if( drv ) {
+            gpu_driver = drv;
+        }
+    }
+    DebugLog( D_INFO, DC_ALL ) << "SDL renderer in use: "
+                               << ( actual_name ? actual_name : "unknown" )
+                               << "; backing GPU driver: " << gpu_driver;
     if( actual_name && std::string( actual_name ).find( "direct3d" ) != std::string::npos ) {
         direct3d_mode = true;
     }
+    // The "gpu" renderer on the D3D12 driver crashes on mid-frame render-target
+    // switches (see gpu_d3d12_mode doc). Detect that exact combination so the
+    // tint overlay can avoid its render-target-switching path on this backend.
+    gpu_d3d12_mode = actual_name &&
+                     std::string( actual_name ) == "gpu" &&
+                     std::string( gpu_driver ).find( "direct3d12" ) != std::string::npos;
 #endif
 }
 
