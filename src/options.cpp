@@ -1840,41 +1840,41 @@ void options_manager::add_options_interface()
                                           to_translation( "Options regarding measurement units." ) ),
     [&]( const std::string & page_id ) {
         add( "USE_CELSIUS", page_id, to_translation( "Temperature units" ),
-             to_translation( "Switch between Celsius, Fahrenheit, and Kelvin." ),
-        { { "celsius", to_translation( "Celsius" ) }, { "fahrenheit", to_translation( "Fahrenheit" ) }, { "kelvin", to_translation( "Kelvin" ) } },
-        "fahrenheit"
+             to_translation( "Switch between Fahrenheit, Celsius, and Kelvin." ),
+        { { "fahrenheit", to_translation( "Fahrenheit" ) }, { "celsius", to_translation( "Celsius" ) }, { "kelvin", to_translation( "Kelvin" ) } },
+        "celsius"
            );
 
         add( "USE_METRIC_SPEEDS", page_id, to_translation( "Speed units" ),
-             to_translation( "Switch between km/h, mph, and tiles/turn." ),
-        { { "km/h", to_translation( "km/h" ) }, { "mph", to_translation( "mph" ) }, { "t/t", to_translation( "tiles/turn" ) } },
-        ( SystemLocale::UseMetricSystem().value_or( false ) ? "km/h" : "mph" )
+             to_translation( "Switch between mph, km/h, and tiles/turn." ),
+        { { "mph", to_translation( "mph" ) }, { "km/h", to_translation( "km/h" ) }, { "t/t", to_translation( "tiles/turn" ) } },
+        ( SystemLocale::UseMetricSystem().value_or( true ) ? "km/h" : "mph" )
            );
 
         add( "USE_METRIC_WEIGHTS", page_id, to_translation( "Mass units" ),
-             to_translation( "Switch between kg and lbs." ),
-        { { "kg", to_translation( "kg" ) }, { "lbs", to_translation( "lbs" ) } },
-        ( SystemLocale::UseMetricSystem().value_or( false ) ? "kg" : "lbs" )
+             to_translation( "Switch between lbs and kg." ),
+        { { "lbs", to_translation( "lbs" ) }, { "kg", to_translation( "kg" ) } },
+        ( SystemLocale::UseMetricSystem().value_or( true ) ? "kg" : "lbs" )
            );
 
         add( "VOLUME_UNITS", page_id, to_translation( "Volume units" ),
-             to_translation( "Switch between the liters (L), cups (c), and quarts (qt)." ),
-        { { "l", to_translation( "Liter" ) }, { "c", to_translation( "Cup" ) }, { "qt", to_translation( "Quart" ) } },
+             to_translation( "Switch between the cups (c), liters (L), and quarts (qt)." ),
+        { { "c", to_translation( "Cup" ) }, { "l", to_translation( "Liter" ) }, { "qt", to_translation( "Quart" ) } },
         "l"
            );
         add( "DISTANCE_UNITS", page_id, to_translation( "Distance units" ),
              to_translation( "Switch between metric and imperial distance units." ),
         { { "metric", to_translation( "Metric" ) }, { "imperial", to_translation( "Imperial" ) } },
-        ( SystemLocale::UseMetricSystem().value_or( false ) ? "metric" : "imperial" ) );
+        ( SystemLocale::UseMetricSystem().value_or( true ) ? "metric" : "imperial" ) );
 
         add( "24_HOUR", page_id, to_translation( "Time format" ),
              to_translation( "12h: AM/PM, e.g. 7:31 AM - Military: 24h Military, e.g. 0731 - 24h: Normal 24h, e.g. 7:31" ),
              //~ 12h time, e.g.  11:59pm
         {   { "12h", to_translation( "12h" ) },
-            //~ Military time, e.g.  2359
-            { "military", to_translation( "Military" ) },
             //~ 24h time, e.g.  23:59
-            { "24h", to_translation( "24h" ) }
+            { "24h", to_translation( "24h" ) },
+            //~ Military time, e.g.  2359
+            { "military", to_translation( "Military" ) }
         },
         "12h" );
         add( "SHOW_MONTHS", page_id, to_translation( "Show day/month" ),
@@ -1883,33 +1883,10 @@ void options_manager::add_options_interface()
         add( "SHOW_VITAMIN_MASS", page_id, to_translation( "Show vitamin masses" ),
              to_translation( "Display the masses of vitamins in addition to units/RDA values in item descriptions." ),
              true );
-    } );
-
-    add_empty_line();
-
-    add_option_group( "interface", Group( "additional_messages_in_log",
-                                          to_translation( "Additional messages in the log" ),
-                                          to_translation( "If true, some additional messages will be shown in the sidebar message log." ) ),
-    [&]( const std::string & page_id ) {
-
-        add( "LOG_ITEMS_ON_THE_GROUND", page_id, to_translation( "Items on the ground" ),
-             to_translation( "Show messages about items lying on the ground when character steps on tile with them." ),
-             true
-           );
-
-        add( "LOG_MONSTER_MOVEMENT", page_id, to_translation( "Special monster movement" ),
-             to_translation( "Show messages about special monster movement: flying over the fence, diving into the water etc." ),
-             true
-           );
-
-        add( "LOG_MONSTER_MOVE_EFFECTS", page_id, to_translation( "Monster attempts to free itself" ),
-             to_translation( "Show messages about monster trying to free itself from effects preventing it from moving: downed, tied etc." ),
-             true
-           );
-
-        add( "LOG_MONSTER_ATTACK_MONSTER", page_id, to_translation( "Monster/NPC attacking monster/NPC" ),
-             to_translation( "Show messages about non-playable creatures attacking other non-playable creatures." ),
-             true
+        add( "MEASURE_PREFIX", page_id, to_translation( "Item measure prefix" ),
+             to_translation( "The measure unit of item prefix." ),
+        { { "both", to_translation( "Both measure unit and count" ) }, { "unit", to_translation( "Measure unit fist" ) }, { "count", to_translation( "Count only" ) } },
+        "both"
            );
     } );
 
