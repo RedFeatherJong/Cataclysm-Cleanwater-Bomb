@@ -1842,19 +1842,19 @@ void options_manager::add_options_interface()
         add( "USE_CELSIUS", page_id, to_translation( "Temperature units" ),
              to_translation( "Switch between Fahrenheit, Celsius, and Kelvin." ),
         { { "fahrenheit", to_translation( "Fahrenheit" ) }, { "celsius", to_translation( "Celsius" ) }, { "kelvin", to_translation( "Kelvin" ) } },
-        "fahrenheit"
+        "celsius"
            );
 
         add( "USE_METRIC_SPEEDS", page_id, to_translation( "Speed units" ),
              to_translation( "Switch between mph, km/h, and tiles/turn." ),
         { { "mph", to_translation( "mph" ) }, { "km/h", to_translation( "km/h" ) }, { "t/t", to_translation( "tiles/turn" ) } },
-        ( SystemLocale::UseMetricSystem().value_or( false ) ? "km/h" : "mph" )
+        ( SystemLocale::UseMetricSystem().value_or( true ) ? "km/h" : "mph" )
            );
 
         add( "USE_METRIC_WEIGHTS", page_id, to_translation( "Mass units" ),
              to_translation( "Switch between lbs and kg." ),
         { { "lbs", to_translation( "lbs" ) }, { "kg", to_translation( "kg" ) } },
-        ( SystemLocale::UseMetricSystem().value_or( false ) ? "kg" : "lbs" )
+        ( SystemLocale::UseMetricSystem().value_or( true ) ? "kg" : "lbs" )
            );
 
         add( "VOLUME_UNITS", page_id, to_translation( "Volume units" ),
@@ -1865,16 +1865,13 @@ void options_manager::add_options_interface()
         add( "DISTANCE_UNITS", page_id, to_translation( "Distance units" ),
              to_translation( "Switch between metric and imperial distance units." ),
         { { "metric", to_translation( "Metric" ) }, { "imperial", to_translation( "Imperial" ) } },
-        ( SystemLocale::UseMetricSystem().value_or( false ) ? "metric" : "imperial" ) );
+        ( SystemLocale::UseMetricSystem().value_or( true ) ? "metric" : "imperial" ) );
 
         add( "24_HOUR", page_id, to_translation( "Time format" ),
-             to_translation( "12h: AM/PM, e.g. 7:31 AM - Military: 24h Military, e.g. 0731 - 24h: Normal 24h, e.g. 7:31" ),
-             //~ 12h time, e.g.  11:59pm
+             to_translation( "12h: AM/PM, e.g. 7:31:47 PM - 24h: Normal 24h, e.g. 21:31:47 - Military: 24h Military, e.g. 2131.47" ),
         {   { "12h", to_translation( "12h" ) },
-            //~ Military time, e.g.  2359
-            { "military", to_translation( "Military" ) },
-            //~ 24h time, e.g.  23:59
-            { "24h", to_translation( "24h" ) }
+            { "24h", to_translation( "24h" ) },
+            { "military", to_translation( "Military" ) }
         },
         "12h" );
         add( "SHOW_MONTHS", page_id, to_translation( "Show day/month" ),
@@ -1883,6 +1880,11 @@ void options_manager::add_options_interface()
         add( "SHOW_VITAMIN_MASS", page_id, to_translation( "Show vitamin masses" ),
              to_translation( "Display the masses of vitamins in addition to units/RDA values in item descriptions." ),
              true );
+        add( "MEASURE_PREFIX", page_id, to_translation( "Item measure prefix" ),
+             to_translation( "The measure unit of item prefix." ),
+        { { "both", to_translation( "Both measure unit and count" ) }, { "unit", to_translation( "Measure unit fist" ) }, { "count", to_translation( "Count only" ) } },
+        "both"
+           );
     } );
 
     add_empty_line();
@@ -2122,7 +2124,7 @@ void options_manager::add_options_interface()
 
         add( "REVERSE_STEERING", page_id, to_translation( "Reverse steering direction in reverse" ),
              to_translation( "If true, when driving a vehicle in reverse, steering should also reverse like real life." ),
-             false
+             true
            );
     } );
 
@@ -2600,10 +2602,11 @@ void options_manager::add_options_graphics()
              to_translation( "If true, use SDL ASCII line drawing routine instead of Unicode Line Drawing characters.  Use this option when your selected font doesn't contain necessary glyphs." ),
              true, COPT_CURSES_HIDE
            );
-
+        
+        const std::string lang = SystemLocale::Language().value_or( "" );
         add( "IMGUI_LOAD_CHINESE", page_id, to_translation( "Chinese glyph ranges in ImGui" ),
              to_translation( "If true, ImGui will add glyphs of full Chinese, include zh_CN, zh_TW, ja. Use this option when your need all Chinese glyphs.  Requires restart." ),
-             false, COPT_CURSES_HIDE
+             ( lang == "zh_CN" || lang == "zh_TW" || lang == "ja" ), COPT_CURSES_HIDE
            );
     } );
 #endif // TILES
@@ -2823,7 +2826,7 @@ void options_manager::add_options_graphics()
 
         add( "PIXEL_MINIMAP_BLINK", page_id, to_translation( "Hostile creature beacon blink speed" ),
              to_translation( "Controls how fast the hostile creature beacons blink on the pixel minimap.  Value is multiplied by 200ms.  0 = disabled." ),
-             0, 50, 10, COPT_CURSES_HIDE
+             0, 50, 5, COPT_CURSES_HIDE
            );
 
         get_option( "PIXEL_MINIMAP_BLINK" ).setPrerequisite( "PIXEL_MINIMAP" );
@@ -3198,6 +3201,11 @@ void options_manager::add_options_debug()
 #else
          false
 #endif
+       );
+
+    add( "NO_ERROR_POPUP", "debug", to_translation("No error popup"),
+        to_translation("If enabled, debug message won't popup on the screen."),
+        false
        );
 }
 
