@@ -60,6 +60,7 @@ class window;
 } // namespace catacurses
 class Character;
 class Creature;
+class avatar;
 class basecamp;
 class character_id;
 class computer;
@@ -585,6 +586,16 @@ class map
         // clears map memory for points occupied by vehicle and marks "dirty" for re-memorizing
         void memory_clear_vehicle_points( const vehicle &veh ) const;
 
+        // Sim-side map-memory update pass (Stage 1 of sim/render decoupling).
+        // Walks the avatar's current field of view and writes everything just
+        // seen into player map memory (terrain/furniture/trap/partial-construction/
+        // vehicle-part), computing subtile/rotation via the map:: orientation
+        // helpers.  This used to live in the tiles draw path (memorize_only); it
+        // now runs in do_turn so rendering can become pure-read.  Must be called
+        // after the map cache is built and before the visibility cache is
+        // invalidated.
+        void update_map_memory( avatar &you );
+
         /**
          * A pre-filter for bresenham LOS.
          * true, if there might be a potential bresenham path between two points.
@@ -1102,7 +1113,7 @@ class map
         // Sim-side tile orientation helpers (Stage 1 of sim/render decoupling).
         // Extracted from cata_tiles so the memory-update pass in do_turn can
         // compute subtile/rotation when memorising seen tiles, without depending
-        // on the tiles subsystem.  See sim-render-decoupling-plan.md §1.
+        // on the tiles subsystem.
         // -----------------------------------------------------------------------
         // Pure-math rotation helpers (no map state needed).
         static void get_rotation_and_subtile( char val, char rot_to, int &rotation, int &subtile );
