@@ -381,8 +381,27 @@ struct tile_render_info {
         lit_level ll;
         std::array<bool, 5> invisible;
 
+        // Terrain semantic content (type id + connection subtile/rotation)
+        // captured during the dirty-gated draw-cache rebuild. This is the first
+        // step of moving the renderer's per-tile reads out of the live draw path
+        // and into the cached draw points, so the renderer can eventually draw
+        // from cached data instead of reading the map directly every frame.
+        // For now it is not consumed for drawing — draw_terrain still reads
+        // here.ter() live; this captured copy only feeds an equivalence check
+        // that proves the two agree. ter is null when nothing was captured
+        // (memory / override / invisible tiles).
+        ter_id ter_content;
+        int ter_content_subtile = 0;
+        int ter_content_rotation = 0;
+
         sprite( const lit_level ll, const std::array<bool, 5> &inv )
             : ll( ll ), invisible( inv ) {}
+
+        void set_ter_content( const ter_id &t, const int subtile, const int rotation ) {
+            ter_content = t;
+            ter_content_subtile = subtile;
+            ter_content_rotation = rotation;
+        }
     };
 
     common com;

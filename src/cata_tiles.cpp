@@ -8,6 +8,7 @@
 #include <chrono>
 #include <climits>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <iterator>
@@ -1009,8 +1010,37 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
                         invisible[1 + i] = apply_visible( np, ch2, here );
                     }
 
+                    tile_render_info::sprite sprite_var{ ll, invisible };
+                    // Capture terrain semantic content here, in the dirty-gated
+                    // draw-cache rebuild, mirroring draw_terrain's normal
+                    // (visible, non-override) branch. draw_terrain still draws
+                    // from live here.ter(); this captured copy feeds the
+                    // equivalence check in draw_terrain that proves the two agree
+                    // (the first step toward drawing from cached content instead
+                    // of reading the map live). Override/memory branches are not
+                    // captured: overrides are only populated transiently by
+                    // explosion/construction/editmap previews, and the memory
+                    // branch is the invisible path, both left for later work.
+                    if( !invisible[0] ) {
+                        const ter_id &cap_t = here.ter( pos );
+                        if( cap_t ) {
+                            int cap_subtile = 0;
+                            int cap_rotation = 0;
+                            const std::bitset<NUM_TERCONN> &connect_group = cap_t.obj().connect_to_groups;
+                            const std::bitset<NUM_TERCONN> &rotate_group = cap_t.obj().rotate_to_groups;
+                            if( connect_group.any() ) {
+                                map::get_connect_values( pos, cap_subtile, cap_rotation, connect_group,
+                                                         rotate_group, {} );
+                            } else {
+                                map::get_terrain_orientation( pos, cap_rotation, cap_subtile, {}, invisible,
+                                                              rotate_group );
+                            }
+                            sprite_var.set_ter_content( cap_t, cap_subtile, cap_rotation );
+                        }
+                    }
+
                     here.draw_points_cache[zlevel][row].emplace_back( tile_render_info::common{ pos, 0},
-                            tile_render_info::sprite{ ll, invisible } );
+                            sprite_var );
                     // Stop building draw points below when floor reached
                     if( here.dont_draw_lower_floor( pos ) ) {
                         break;
@@ -1167,6 +1197,25 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
                         // Get visibility variables
                         lit_level ll = var->ll;
                         std::array<bool, 5> invisible = var->invisible;
+
+                        // Hand draw_terrain the terrain content captured for this
+                        // tile during the draw-cache rebuild so it can verify its
+                        // own live read against the cached copy. Only meaningful
+                        // for the terrain layer; null ter means nothing was
+                        // captured (skip the check). Gated by the
+                        // CATA_VERIFY_DRAW_CACHE env var so it never spams normal
+                        // builds — opt in when verifying the cache. Temporary: the
+                        // check goes away once draw_terrain reads from the cache.
+                        static const bool verify_draw_cache =
+                            std::getenv( "CATA_VERIFY_DRAW_CACHE" ) != nullptr;
+                        if( verify_draw_cache && f == &cata_tiles::draw_terrain ) {
+                            m_check_ter_content = static_cast<bool>( var->ter_content );
+                            m_cur_ter_content = var->ter_content;
+                            m_cur_ter_content_subtile = var->ter_content_subtile;
+                            m_cur_ter_content_rotation = var->ter_content_rotation;
+                        } else {
+                            m_check_ter_content = false;
+                        }
 
                         if( f == &cata_tiles::draw_vpart_no_roof || f == &cata_tiles::draw_vpart_roof ) {
                             int temp_height_3d = p.com.height_3d;
@@ -3447,6 +3496,22 @@ bool cata_tiles::draw_terrain( const tripoint_bub_ms &p, const lit_level ll, int
         } else {
             map::get_terrain_orientation( p, rotation, subtile, {}, invisible, rotate_group );
             // do something to get other terrain orientation values
+        }
+        // Verify the terrain content captured into the draw cache matches this
+        // live read. Only the normal non-overridden branch is checked (the
+        // capture used an empty override map). A mismatch means the cached copy
+        // diverged from the live draw and must be fixed before the renderer can
+        // safely draw from the cache. Temporary: dropped once draw_terrain reads
+        // from the cache. m_check_ter_content gates it to opt-in verify runs.
+        if( m_check_ter_content && !neighborhood_overridden ) {
+            if( m_cur_ter_content != t || m_cur_ter_content_subtile != subtile ||
+                m_cur_ter_content_rotation != rotation ) {
+                debugmsg( "draw-cache terrain mismatch at %s: cached "
+                          "%s/sub%d/rot%d vs live %s/sub%d/rot%d",
+                          p.to_string(), m_cur_ter_content.id().str(),
+                          m_cur_ter_content_subtile, m_cur_ter_content_rotation,
+                          t.id().str(), subtile, rotation );
+            }
         }
         // draw the actual terrain if there's no override
         if( !neighborhood_overridden ) {

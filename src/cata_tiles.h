@@ -1126,6 +1126,19 @@ class cata_tiles
         sprite_screen_bounds *m_cur_bounds = nullptr;
         small_literal_vector<tint_sprite_record, 4> *m_cur_tint_sprites = nullptr;
 
+        // Terrain content captured for the current tile during the draw-cache
+        // rebuild, set by the layer loop before each draw_terrain call. This
+        // mirrors the m_cur_bounds pattern (pass per-tile state to a layer
+        // function without changing the shared layer-fn signature). draw_terrain
+        // compares its own live-read terrain orientation against these to prove
+        // the cached copy agrees with the live read; this is a temporary
+        // equivalence check that will be dropped once the layer functions draw
+        // from the cached content directly. ter null = nothing captured here.
+        bool m_check_ter_content = false;
+        ter_id m_cur_ter_content;
+        int m_cur_ter_content_subtile = 0;
+        int m_cur_ter_content_rotation = 0;
+
         // Set by draw_vpart around its draw_from_id_string call so the vehicle
         // part sprite gets recolored with the part's paint color; nullopt
         // otherwise. Consumed when building tile_render_params.
