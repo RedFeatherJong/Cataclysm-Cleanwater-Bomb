@@ -5,6 +5,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -98,6 +99,12 @@ class mapbuffer
         void remove_submap( const tripoint_abs_sm &addr );
         submap *unserialize_submaps( const tripoint_abs_sm &p );
         bool submap_file_exists( const tripoint_abs_sm &p );
+
+        /** Guards all accesses to submaps that may overlap with background
+         *  worker threads. recursive_mutex allows mapgen code (running under
+         *  a held lock) to call lookup_submap/add_submap without deadlocking. */
+        mutable std::recursive_mutex submaps_mutex_;
+
         void deserialize( const JsonArray &ja );
         void save_quad(
             const cata_path &dirname, const cata_path &filename,
