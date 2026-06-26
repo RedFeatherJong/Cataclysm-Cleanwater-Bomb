@@ -628,6 +628,16 @@ class map
         void set_pathfinding_cache_dirty( const tripoint_bub_ms &p );
         /*@}*/
 
+        // Mark the tiles draw-points cache for rebuild on the next frame.
+        // Terrain/furniture changes already trigger this transitively (they
+        // dirty the seen cache, which build_map_cache turns into a draw-cache
+        // rebuild), but the decoration-class mutators — traps, partial
+        // construction, graffiti — change none of the visibility caches, so
+        // they must request the rebuild explicitly or the cache would serve a
+        // stale snapshot of that content. No-op outside tiles builds / the
+        // reality bubble.
+        void set_draw_points_cache_dirty();
+
         void invalidate_map_cache( int zlev );
 
         // @returns true if map memory decoration should be re/memorized

@@ -398,6 +398,15 @@ void map::set_seen_cache_dirty( const int zlevel )
     }
 }
 
+void map::set_draw_points_cache_dirty()
+{
+#if defined(TILES)
+    if( !test_mode && g != nullptr && this == &reality_bubble() ) {
+        draw_points_cache_dirty = true;
+    }
+#endif
+}
+
 void map::set_outside_cache_dirty( const int zlev )
 {
     if( inbounds_z( zlev ) ) {
@@ -7649,6 +7658,7 @@ void map::partial_con_remove( const tripoint_bub_ms &p )
 {
     partial_con_remove_impl( p );
     memory_cache_dec_set_dirty( p, true );
+    set_draw_points_cache_dirty();
     avatar &player_character = get_avatar();
     if( player_character.sees( *this, p ) ) {
         player_character.memorize_clear_decoration( get_abs( p ), "tr_" );
@@ -7688,6 +7698,7 @@ void map::partial_con_set( const tripoint_bub_ms &p, const partial_con &con )
     if( !current_submap->partial_constructions.emplace( tripoint_sm_ms( l, p.z() ), con ).second ) {
         debugmsg( "set partial con on top of terrain which already has a partial con" );
     }
+    set_draw_points_cache_dirty();
 }
 
 void map::trap_set( const tripoint_bub_ms &p, const trap_id &type )
@@ -7711,6 +7722,7 @@ void map::trap_set( const tripoint_bub_ms &p, const trap_id &type )
     }
 
     memory_cache_dec_set_dirty( p, true );
+    set_draw_points_cache_dirty();
     avatar &player_character = get_avatar();
     if( player_character.sees( *this, p ) ) {
         player_character.memorize_clear_decoration( get_abs( p ), "tr_" );
@@ -7743,6 +7755,7 @@ void map::remove_trap( const tripoint_bub_ms &p )
     if( tid != tr_null ) {
         if( g != nullptr && this == &reality_bubble() ) {
             memory_cache_dec_set_dirty( p, true );
+            set_draw_points_cache_dirty();
             avatar &player_character = get_avatar();
             if( player_character.sees( *this,  p ) ) {
                 player_character.memorize_clear_decoration( get_abs( p ), "tr_" );
@@ -10869,6 +10882,7 @@ void map::set_graffiti( const tripoint_bub_ms &p, const std::string &contents )
         return;
     }
     current_submap->set_graffiti( l, contents );
+    set_draw_points_cache_dirty();
 }
 
 void map::delete_graffiti( const tripoint_bub_ms &p )
@@ -10883,6 +10897,7 @@ void map::delete_graffiti( const tripoint_bub_ms &p )
         return;
     }
     current_submap->delete_graffiti( l );
+    set_draw_points_cache_dirty();
 }
 
 const std::string &map::graffiti_at( const tripoint_bub_ms &p ) const
