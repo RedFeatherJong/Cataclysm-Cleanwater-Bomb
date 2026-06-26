@@ -138,6 +138,7 @@ parsers = {
     "effect_migration": dummy_parser,
     "emit": dummy_parser,
     "enchantment": parse_enchant,
+    "explosion_light": dummy_parser,
     "end_screen": parse_end_screen,
     "event_statistic": parse_event_statistic,
     "event_transformation": dummy_parser,
