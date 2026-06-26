@@ -19,9 +19,7 @@ def parse_json_object(json, origin):
                 print(f"Exception when parsing JSON data type '{json_type}'")
                 raise E
         else:
-            # CCB fork: unknown types are silently skipped instead of crashing
-            pass
-            # raise Exception(f"Unrecognized JSON data type '{json_type}'")
+            raise Exception(f"Unrecognized JSON data type '{json_type}'")
 
 
 def parse_json_file(file_path):
