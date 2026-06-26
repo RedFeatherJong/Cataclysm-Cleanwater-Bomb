@@ -63,6 +63,7 @@ class pixel_minimap;
 class vehicle;
 struct sprite_screen_bounds;
 struct tint_sprite_record;
+struct tile_render_info;
 
 namespace catacurses
 {
@@ -1125,6 +1126,18 @@ class cata_tiles
         // tinting; null for iso tiles, UI overlays, and non-tinted tiles.
         sprite_screen_bounds *m_cur_bounds = nullptr;
         small_literal_vector<tint_sprite_record, 4> *m_cur_tint_sprites = nullptr;
+
+        // The cached draw point for the current tile, set by the layer loop
+        // before each draw_* call, mirroring the m_cur_bounds pattern (pass
+        // per-tile state to a layer function without changing the shared
+        // layer-fn signature). The static-layer draw functions read the
+        // terrain/furniture/trap/partial-construction/graffiti content captured
+        // on its sprite variant in their normal visible branch instead of
+        // reading the map live. A pointer to the outer tile_render_info (not the
+        // nested sprite) so the type stays forward-declarable here — cata_tiles.h
+        // must not include map.h (map.h includes this header). Null outside the
+        // sprite branch of the layer loop.
+        const tile_render_info *m_cur_tile = nullptr;
 
         // Set by draw_vpart around its draw_from_id_string call so the vehicle
         // part sprite gets recolored with the part's paint color; nullopt
