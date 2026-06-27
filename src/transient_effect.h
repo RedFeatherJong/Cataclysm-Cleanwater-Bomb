@@ -16,6 +16,7 @@ enum class effect_kind : uint8_t {
     bullet,
     creature_move,
     creature_hit,
+    creature_attack,
     sct,
     highlight,
 };

@@ -2060,9 +2060,12 @@ effect_handle cata_tiles::start_creature_move_anim( const tripoint_abs_ms &from_
         anim.curve = move_anim_curve::smooth;
     }
     // New animation overwrites any prior one for this creature and plays from 0.
+    // If a glide was already in flight to this tile, drop its stale handle.
+    if( auto old = m_creature_anims.find( to_abs ); old != m_creature_anims.end() ) {
+        m_handle_index.erase( old->second.handle );
+    }
     m_creature_anims[to_abs] = anim;
-    const effect_handle h = alloc_handle( effect_kind::creature_move,
-                                          &m_creature_anims[to_abs] );
+    const effect_handle h = alloc_handle( effect_kind::creature_move );
     m_creature_anims[to_abs].handle = h;
     return h;
 }
@@ -2126,7 +2129,12 @@ void cata_tiles::advance_creature_move_anims()
     }
     for( auto it = m_creature_attack_anims.begin(); it != m_creature_attack_anims.end(); ) {
         it->second.progress += it->second.per_ms * static_cast<float>( dt );
-        if( it->second.progress >= 1.0f ) {
+        bool erase_this = ( it->second.progress >= 1.0f );
+        if( !erase_this && !here.inbounds( here.get_bub( it->first ) ) ) {
+            erase_this = true;
+        }
+        if( erase_this ) {
+            m_handle_index.erase( it->second.handle );
             it = m_creature_attack_anims.erase( it );
         } else {
             ++it;
@@ -2159,24 +2167,27 @@ effect_handle cata_tiles::start_creature_hit_anim( const tripoint_abs_ms &pos_ab
         anim.dir_tiles = point::zero;
     }
     // Restart from the top if the creature is hit again mid-reaction.
+    // If a hit reaction was already playing, drop its stale handle first.
+    if( auto old = m_creature_hit_anims.find( pos_abs ); old != m_creature_hit_anims.end() ) {
+        m_handle_index.erase( old->second.handle );
+    }
     m_creature_hit_anims[pos_abs] = anim;
-    const effect_handle h = alloc_handle( effect_kind::creature_hit,
-                                          &m_creature_hit_anims[pos_abs] );
+    const effect_handle h = alloc_handle( effect_kind::creature_hit );
     m_creature_hit_anims[pos_abs].handle = h;
     return h;
 }
 
-void cata_tiles::start_creature_attack_anim( const tripoint_abs_ms &pos_abs,
+effect_handle cata_tiles::start_creature_attack_anim( const tripoint_abs_ms &pos_abs,
         const point &dir_tiles, bool is_player )
 {
     if( !get_option<bool>( "CREATURE_ATTACK_ANIM" ) ) {
-        return;
+        return 0;
     }
     if( is_player && !get_option<bool>( "PLAYER_ATTACK_ANIM" ) ) {
-        return;
+        return 0;
     }
     if( dir_tiles.x == 0 && dir_tiles.y == 0 ) {
-        return;
+        return 0;
     }
     const float total_ms = std::max( 1, get_option<int>( "CREATURE_ATTACK_ANIM_TIME" ) );
     creature_attack_anim anim;
@@ -2184,7 +2195,14 @@ void cata_tiles::start_creature_attack_anim( const tripoint_abs_ms &pos_abs,
     anim.per_ms = 1.0f / total_ms;
     anim.dist_tiles = 0.5f;
     anim.dir_tiles = dir_tiles;
+    // If an attack lunge was already playing, drop its stale handle first.
+    if( auto old = m_creature_attack_anims.find( pos_abs ); old != m_creature_attack_anims.end() ) {
+        m_handle_index.erase( old->second.handle );
+    }
     m_creature_attack_anims[pos_abs] = anim;
+    const effect_handle h = alloc_handle( effect_kind::creature_attack );
+    m_creature_attack_anims[pos_abs].handle = h;
+    return h;
 }
 
 point cata_tiles::player_to_screen( const point_bub_ms &pos ) const
@@ -5090,8 +5108,7 @@ effect_handle cata_tiles::init_explosion_light( const std::map<tripoint_bub_ms, 
     a.shock_target = shock_target;
     a.shock_half_angle = shock_half_angle;
     m_explosion_lights.push_back( std::move( a ) );
-    const effect_handle h = alloc_handle( effect_kind::explosion_light,
-                                          &m_explosion_lights.back() );
+    const effect_handle h = alloc_handle( effect_kind::explosion_light );
     m_explosion_lights.back().handle = h;
     return h;
 }
@@ -5185,8 +5202,8 @@ effect_handle cata_tiles::init_bullet_anim( const std::vector<tripoint_bub_ms> &
     anim.start_delay_ms = std::min( max_stagger_ms,
                                     burst_gap_ms * static_cast<float>( pending ) );
     m_bullet_anims.push_back( std::move( anim ) );
-    const effect_handle h = alloc_handle( effect_kind::bullet,
-                                          &m_bullet_anims.back() );
+    const effect_handle h = alloc_handle( effect_kind::bullet );
+
     m_bullet_anims.back().handle = h;
     return h;
 }
@@ -5371,8 +5388,9 @@ void cata_tiles::void_custom_explosion()
 }
 void cata_tiles::void_explosion_light()
 {
-    // Drop every active blast at once (scene reset / renderer recovery). Normal
-    // completion is handled per-blast by advance_explosion_lights().
+    for( const active_explosion_light &a : m_explosion_lights ) {
+        m_handle_index.erase( a.handle );
+    }
     m_explosion_lights.clear();
     m_explosion_light_last_ms.reset();
     clear_shockwaves();
@@ -5447,8 +5465,8 @@ effect_handle cata_tiles::init_sct( const tripoint_bub_ms &pos, const std::strin
     eff.elapsed_ms = 0.0f;
     eff.screen_y_offset = 0.0f;
     m_sct_effects.push_back( std::move( eff ) );
-    const effect_handle h = alloc_handle( effect_kind::sct,
-                                          &m_sct_effects.back() );
+    const effect_handle h = alloc_handle( effect_kind::sct );
+
     m_sct_effects.back().handle = h;
     return h;
 }
@@ -5523,10 +5541,10 @@ void cata_tiles::draw_sct_frame( int view_z,
 
 // --- Handle system ---
 
-effect_handle cata_tiles::alloc_handle( effect_kind kind, void *ptr )
+effect_handle cata_tiles::alloc_handle( effect_kind kind )
 {
     const effect_handle h = m_next_handle++;
-    m_handle_index[h] = { kind, ptr };
+    m_handle_index[h] = { kind };
     return h;
 }
 
@@ -5558,6 +5576,11 @@ void cata_tiles::cancel_effect( effect_handle h )
         case effect_kind::creature_hit:
             for( auto e = m_creature_hit_anims.begin(); e != m_creature_hit_anims.end(); ++e ) {
                 if( e->second.handle == h ) { m_creature_hit_anims.erase( e ); return; }
+            }
+            break;
+        case effect_kind::creature_attack:
+            for( auto e = m_creature_attack_anims.begin(); e != m_creature_attack_anims.end(); ++e ) {
+                if( e->second.handle == h ) { m_creature_attack_anims.erase( e ); return; }
             }
             break;
         case effect_kind::sct:
@@ -5604,8 +5627,8 @@ effect_handle cata_tiles::add_highlight( const tripoint_bub_ms &pos, float durat
     h.pos = pos;
     h.life_ms = duration_ms;
     m_highlights.push_back( h );
-    const effect_handle hl = alloc_handle( effect_kind::highlight,
-                                           &m_highlights.back() );
+    const effect_handle hl = alloc_handle( effect_kind::highlight );
+
     m_highlights.back().handle = hl;
     return hl;
 }
@@ -5998,6 +6021,9 @@ void cata_tiles::draw_bullet_anim_frame( int view_z )
 }
 void cata_tiles::void_bullet_anim()
 {
+    for( const active_bullet_anim &a : m_bullet_anims ) {
+        m_handle_index.erase( a.handle );
+    }
     m_bullet_anims.clear();
     m_bullet_anim_last_ms.reset();
 }

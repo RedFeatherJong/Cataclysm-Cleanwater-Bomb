@@ -963,16 +963,19 @@ class cata_tiles
         // just struck a target in direction \p dir_tiles (attacker -> target, in
         // tiles): a quick lunge toward the target and back. No-op when the
         // CREATURE_ATTACK_ANIM option is off. \p is_player gates the avatar's lunge
-        // on the separate PLAYER_ATTACK_ANIM option.
-        void start_creature_attack_anim( const tripoint_abs_ms &pos_abs,
-                                         const point &dir_tiles, bool is_player );
+        // on the separate PLAYER_ATTACK_ANIM option.  Returns a handle so the
+        // caller can cancel the lunge mid-flight via cancel_effect().
+        effect_handle start_creature_attack_anim( const tripoint_abs_ms &pos_abs,
+                                                  const point &dir_tiles, bool is_player );
         // True while any attack lunge is in flight.
         bool has_creature_attack_anim() const {
             return !m_creature_attack_anims.empty();
         }
-        // True while any transient visual effect (creature glide, hit, attack,
+        // True while any creature or overlay animation (glide, hit, attack,
         // SCT label, or highlight) is in flight.  Used by the input loop to
         // raise its redraw rate so animations look smooth instead of stepping.
+        // (Explosion lights and bullet tracers have their own independent
+        // has_* gates that are checked separately in the in_animation gate.)
         bool has_creature_anim() const {
             return has_creature_move_anim() || has_creature_hit_anim() ||
                    has_creature_attack_anim() || has_sct() || has_highlight();
@@ -1005,9 +1008,10 @@ class cata_tiles
         void draw_highlights( int view_z );
 
         // --- Handle system ---
-        // Allocate a new handle for a freshly-created effect, registering it
-        // in the handle index so cancel_effect() can later find and erase it.
-        effect_handle alloc_handle( effect_kind kind, void *ptr );
+        // Allocate a new handle for a freshly-created effect, registering
+        // its category in the handle index so cancel_effect() can later
+        // dispatch to the correct container.
+        effect_handle alloc_handle( effect_kind kind );
         // Cancel an effect by its handle.  No-op if unknown.  Walks the
         // matching container and erases the entry whose handle matches.
         void cancel_effect( effect_handle h );
@@ -1238,6 +1242,7 @@ class cata_tiles
         // Active per-creature attack lunges, keyed by the attacker's absolute
         // position: a quick lunge toward the struck target and back.
         struct creature_attack_anim {
+            effect_handle handle = 0;  // for cancel_effect(); zero until registered
             float progress = 0.0f;     // 0..1
             float per_ms = 0.0f;       // progress increment per millisecond
             float dist_tiles = 0.5f;   // peak lunge distance in tiles
@@ -1379,12 +1384,13 @@ class cata_tiles
         std::optional<int64_t> m_highlights_last_ms;
 
         // --- Handle infrastructure ---
-        // Entry stored in the handle-to-pointer index.
-        struct handle_entry { effect_kind kind; void *ptr; };
+        // Entry in the handle index: stores only the effect category so
+        // cancel_effect() knows which container to search.
+        struct handle_entry { effect_kind kind; };
         // Monotonically-increasing handle counter.  Zero means "no handle".
         effect_handle m_next_handle = 1;
-        // Maps each allocated handle to its effect kind and container pointer,
-        // so cancel_effect() can dispatch to the right container.
+        // Maps each allocated handle to its effect kind so cancel_effect()
+        // can dispatch to the correct container.
         std::unordered_map<effect_handle, handle_entry> m_handle_index;
 
         std::vector<tripoint_bub_ms> bul_pos;
