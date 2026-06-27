@@ -1625,10 +1625,22 @@ void vehicle::use_auto_cooker( map &here, int p )
         return;
     }
 
-    bool has_cookable = false;
-    for( const item &it : items ) {
+    const auto has_cookable_recursive = [&]( const item & it, auto & check ) -> bool {
         if( it.is_comestible() && !it.get_comestible()->cook_result.is_null() &&
             !it.get_comestible()->cook_result.is_empty() ) {
+            return true;
+        }
+        for( const item *content : it.all_items_top( pocket_type::CONTAINER ) ) {
+            if( check( *content, check ) ) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    bool has_cookable = false;
+    for( const item &it : items ) {
+        if( has_cookable_recursive( it, has_cookable_recursive ) ) {
             has_cookable = true;
             break;
         }
@@ -1646,12 +1658,17 @@ void vehicle::use_auto_cooker( map &here, int p )
     }
 
     vp.enabled = true;
-    for( item &it : items ) {
+    const auto reset_cookable_recursive = [&]( item & it, auto & reset ) -> void {
         if( it.is_comestible() && !it.get_comestible()->cook_result.is_null() &&
             !it.get_comestible()->cook_result.is_empty() ) {
             it.set_var( "cook_energy_done", "0" );
-            it.set_var( "cook_time_done", "0" );
         }
+        for( item *content : it.all_items_top( pocket_type::CONTAINER ) ) {
+            reset( *content, reset );
+        }
+    };
+    for( item &it : items ) {
+        reset_cookable_recursive( it, reset_cookable_recursive );
     }
 
     add_msg( m_good, _( "You turn on the electric cooker." ) );

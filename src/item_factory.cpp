@@ -3786,10 +3786,6 @@ void islot_comestible::deserialize( const JsonObject &jo )
     optional( jo, was_loaded, "cook_result", cook_result, itype_id::NULL_ID() );
     optional( jo, was_loaded, "cook_cost_energy", cook_cost_energy,
               units_bound_reader<units::energy> {0_kJ} );
-    optional( jo, was_loaded, "cook_cost_time", cook_cost_time, time_bound_reader{0_seconds} );
-    optional( jo, was_loaded, "cook_batch_time", cook_batch_time, time_bound_reader{0_seconds} );
-    optional( jo, was_loaded, "cook_batch_energy", cook_batch_energy,
-              units_bound_reader<units::energy> {0_kJ} );
     optional( jo, was_loaded, "petfood", petfood, string_reader{} );
     optional( jo, was_loaded, "monotony_penalty", monotony_penalty, -1 );
     optional( jo, was_loaded, "calories", default_nutrition.calories );

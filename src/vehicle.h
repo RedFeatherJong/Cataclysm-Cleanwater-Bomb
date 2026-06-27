@@ -2662,10 +2662,9 @@ class vehicle
         // Auto-cooker helpers.  Defined in vehicle.cpp so they can be reused by
         // the off-map time catch-up logic.
         static bool is_auto_cookable( const item &it );
-        item *auto_cooker_current_item( vehicle_part &vp, size_t &cookable_index );
+        item *auto_cooker_current_item( vehicle_part &vp );
         static void finish_auto_cooked_item( item &it, const islot_comestible &comest );
-        static bool advance_auto_cooker_item_once( item &it, size_t cookable_index,
-                vehicle &cur_veh, map &here, bool &out_of_power );
+        static bool advance_auto_cooker_item_once( item &it, int energy_per_turn_kj );
 };
 
 // For reference what each function is supposed to do, see their implementation in

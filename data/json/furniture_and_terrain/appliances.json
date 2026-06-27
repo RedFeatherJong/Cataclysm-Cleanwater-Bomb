@@ -1320,7 +1320,7 @@
   {
     "type": "vehicle_part",
     "id": "app_electric_cooker",
-    "name": { "str": "electric cooker" },
+    "name": { "str": "炉灶" },
     "item": "electric_cooker",
     "categories": [ "utility" ],
     "location": "center",
@@ -1332,7 +1332,7 @@
     "damage_reduction": { "all": 5 },
     "flags": [ "APPLIANCE", "CARGO", "COVERED", "OBSTACLE", "AUTO_COOKER", "ENABLED_DRAINS_EPOWER" ],
     "size": "20 L",
-    "epower": "-5 W",
+    "epower": "-750 W",
     "requirements": {
       "repair": {
         "skills": [ [ "mechanics", 2 ], [ "electronics", 1 ] ],

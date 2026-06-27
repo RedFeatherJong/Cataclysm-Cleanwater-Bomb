@@ -50,7 +50,8 @@
     "post_terrain": "f_cd_delight_paddy",
     "components": [
       [ [ "material_soil", 10 ] ],
-      [ [ "stick", 2 ] ]
+      [ [ "stick", 2 ] ],
+      [ [ "water", 20 ] ]
     ]
   },
   {
@@ -59,13 +60,14 @@
     "group": "cd_delight_build_trellis",
     "category": "FARM_WOOD",
     "required_skills": [ [ "survival", 1 ] ],
-    "time": "15 m",
-    "qualities": [ [ { "id": "CUT", "level": 1 } ] ],
+    "time": "30 m",
+    "qualities": [ [ { "id": "CUT", "level": 1 } ], [ { "id": "HAMMER", "level": 1 } ] ],
     "pre_terrain": "f_cd_delight_fertile",
     "post_terrain": "f_cd_delight_trellis",
     "components": [
-      [ [ "stick", 4 ] ],
-      [ [ "string_36", 1 ] ]
+      [ [ "stick_long", 8 ], [ "stick", 16 ] ],
+      [ [ "rope_30", 6 ], [ "rope_makeshift_30", 6 ] ],
+      [ [ "nail", 10 ] ]
     ]
   },
   {

@@ -1553,7 +1553,7 @@
   {
     "type": "construction_group",
     "id": "place_electric_cooker",
-    "name": "Place Electric Cooker"
+    "name": "放置炉灶"
   },
   {
     "type": "construction_group",

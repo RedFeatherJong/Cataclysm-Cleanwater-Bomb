@@ -244,14 +244,8 @@ struct islot_comestible {
 
         /** Reference to item that will be received after cooking current item in an electric cooker */
         itype_id cook_result;
-        /** Energy required to cook the first item in an electric cooker */
+        /** Energy required to cook the item in an electric cooker */
         units::energy cook_cost_energy = 0_J;
-        /** Time required to cook the first item in an electric cooker */
-        time_duration cook_cost_time = 0_turns;
-        /** Additional time required for each subsequent item in an electric cooker */
-        time_duration cook_batch_time = 0_turns;
-        /** Additional energy required for each subsequent item in an electric cooker */
-        units::energy cook_batch_energy = 0_J;
 
         /*
         * For the few rare cases where default nutrition needs to be accessible. Prefer using
