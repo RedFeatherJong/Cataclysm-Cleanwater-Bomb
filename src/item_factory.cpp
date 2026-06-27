@@ -2719,6 +2719,12 @@ void Item_factory::check_definitions() const
                 msg += string_format( "invalid smoking_result %s\n",
                                       type->comestible->smoking_result.c_str() );
             }
+            if( !type->comestible->cook_result.is_null() &&
+                !type->comestible->cook_result.is_empty() &&
+                !has_template( type->comestible->cook_result ) ) {
+                msg += string_format( "invalid cook_result %s\n",
+                                      type->comestible->cook_result.c_str() );
+            }
             if( type->comestible->rot_spawn.rot_spawn_monster != mtype_id::NULL_ID() &&
                 !type->comestible->rot_spawn.rot_spawn_monster.is_valid() ) {
                 msg += string_format( "invalid rot_spawn monster %s\n",
@@ -3777,6 +3783,9 @@ void islot_comestible::deserialize( const JsonObject &jo )
     optional( jo, was_loaded, "cooks_like", cooks_like );
     optional( jo, was_loaded, "eats_like", eats_like );
     optional( jo, was_loaded, "smoking_result", smoking_result, itype_id::NULL_ID() );
+    optional( jo, was_loaded, "cook_result", cook_result, itype_id::NULL_ID() );
+    optional( jo, was_loaded, "cook_cost_energy", cook_cost_energy,
+              units_bound_reader<units::energy> {0_kJ} );
     optional( jo, was_loaded, "petfood", petfood, string_reader{} );
     optional( jo, was_loaded, "monotony_penalty", monotony_penalty, -1 );
     optional( jo, was_loaded, "calories", default_nutrition.calories );
@@ -3798,6 +3807,9 @@ void islot_comestible::deserialize( const JsonObject &jo )
 
     if( smoking_result != itype_id::NULL_ID() && comesttype == "INVALID" ) {
         jo.throw_error( "comestible_type INVALID cannot have smoking_result" );
+    }
+    if( cook_result != itype_id::NULL_ID() && comesttype == "INVALID" ) {
+        jo.throw_error( "comestible_type INVALID cannot have cook_result" );
     }
 }
 
