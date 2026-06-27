@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -13,6 +14,7 @@
 #include "coords_fwd.h"
 #include "enums.h"
 #include "game_constants.h"
+#include "hsv_color.h"
 #include "type_id.h"
 
 #if defined(TILES)
@@ -125,8 +127,8 @@ struct tile_render_info {
         // Only the static layers are captured here — terrain, furniture, trap,
         // partial construction, graffiti — because the rebuild runs only when
         // the cache is marked dirty (player action), which matches how often
-        // these change.  Fields and items are captured per-frame in draw();
-        // vehicles and creatures remain on the live path for now.
+        // these change.  Fields, items, and vehicle parts are captured
+        // per-frame in draw(); creatures remain on the live path for now.
         //
         // A null/empty content field means nothing was captured for that layer
         // (memory / override / invisible tiles, or simply nothing present).
@@ -169,6 +171,19 @@ struct tile_render_info {
         int item_count = 0;
         bool sees_items = false;
 
+        // Vehicle part data captured per-frame.  Vehicles move and parts
+        // change state every turn (movement, open/close, break), so a
+        // one-shot rebuild-time capture is insufficient.
+        // Default-constructed vpart_id (null) means no vehicle part is
+        // present on this tile.
+        vpart_id vpart_content;
+        int vpart_subtile = 0;           // 0 = normal, open_, broken
+        int vpart_rotation = 0;          // angle_to_dir4(face.dir - 270°)
+        std::string vpart_variant;       // variant id string
+        std::string vpart_carried_furn;  // carried furniture id
+        bool vpart_has_cargo = false;    // for cargo highlight
+        std::optional<RGBColor> vpart_tint;  // custom paint color
+
         sprite( const lit_level ll, const std::array<bool, 5> &inv )
             : ll( ll ), invisible( inv ) {}
 
@@ -204,6 +219,18 @@ struct tile_render_info {
             item_variant = variant;
             item_count = count;
             sees_items = sees;
+        }
+        void set_vpart_content( const vpart_id &id, const int subtile,
+                                 const int rotation, const std::string &variant,
+                                 const std::string &carried_furn, const bool has_cargo,
+                                 const std::optional<RGBColor> &tint ) {
+            vpart_content = id;
+            vpart_subtile = subtile;
+            vpart_rotation = rotation;
+            vpart_variant = variant;
+            vpart_carried_furn = carried_furn;
+            vpart_has_cargo = has_cargo;
+            vpart_tint = tint;
         }
     };
 
@@ -312,7 +339,6 @@ class draw_points_cache_t
 //    for the full TODO.
 //
 // 4. MISSING L3 DATA (not captured yet; live-read every frame):
-//    - vehicle part data (vpart_id + display state + paint color name)
 //    - creature data (CreatureView: type id, facing, mount/summoner flags)
 //    - light scalar (float from lm[][]) — currently only computed RGBA tint is stored
 //    - memorized tile content (for invisible/memory tiles)

@@ -1200,6 +1200,101 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
         }
     }
 
+    // Refresh the per-tile vehicle-part cache every frame.  Vehicle
+    // parts change every turn (movement, open/close, break), so a
+    // one-shot rebuild-time capture is insufficient.  Covers three
+    // cases in priority order:
+    //   1. Override tiles: drawn from vpart_override (construction /
+    //      explosion previews), checked unconditionally.
+    //   2. Visible tiles: drawn from the live vehicle on the map.
+    //   3. Invisible tiles: drawn from memorized vehicle-part data.
+    {
+        map &here = get_map();
+        auto &vp_ov = vpart_override;
+        for( int zlevel = center.z(); zlevel >= draw_min_z; zlevel-- ) {
+            for( int row = min_row; row < max_row; row++ ) {
+                for( tile_render_info &tri : here.draw_points_cache.tiles[zlevel][row] ) {
+                    tile_render_info::sprite *const var =
+                        std::get_if<tile_render_info::sprite>( &tri.var );
+                    if( !var ) {
+                        continue;
+                    }
+                    // 1. Override check (unconditional)
+                    const auto ov = vp_ov.find( tri.com.pos );
+                    if( ov != vp_ov.end() && std::get<0>( ov->second ) ) {
+                        const char part_mod = std::get<1>( ov->second );
+                        var->set_vpart_content(
+                            std::get<0>( ov->second ),
+                            part_mod == 1 ? open_ :
+                                part_mod == 2 ? broken : 0,
+                            angle_to_dir4( std::get<2>( ov->second )
+                                - 270_degrees ),
+                            std::string{},
+                            std::string{},
+                            std::get<3>( ov->second ) != 0,
+                            std::nullopt );
+                        continue;
+                    }
+                    if( !var->invisible[0] ) {
+                        // 2. Normal: read live vehicle data
+                        const optional_vpart_position ovp =
+                            here.veh_at( tri.com.pos );
+                        if( ovp ) {
+                            const vehicle &veh = ovp->vehicle();
+                            const vpart_display vd =
+                                veh.get_display_of_tile(
+                                    ovp->mount_pos() );
+                            if( !vd.id.is_null() ) {
+                                const int subtile =
+                                    vd.is_open ? open_ :
+                                    vd.is_broken ? broken : 0;
+                                var->set_vpart_content(
+                                    vd.id, subtile,
+                                    angle_to_dir4( veh.face.dir()
+                                        - 270_degrees ),
+                                    vd.variant.id,
+                                    vd.carried_furn,
+                                    vd.has_cargo,
+                                    get_vpart_tint( veh,
+                                        ovp->mount_pos() ) );
+                                continue;
+                            }
+                        }
+                    } else {
+                        // 3. Memory: invisible tile
+                        const memorized_tile &t =
+                            get_vpart_memory_at(
+                                here.get_abs( tri.com.pos ) );
+                        std::string_view tid = t.get_dec_id();
+                        if( !tid.empty() ) {
+                            std::string_view tvar;
+                            const size_t sep = tid.find(
+                                vehicles::variant_separator );
+                            if( sep != std::string::npos ) {
+                                tvar = tid.substr( sep + 1 );
+                                tid = tid.substr( 0, sep );
+                            }
+                            var->set_vpart_content(
+                                vpart_id( std::string( tid ) ),
+                                t.get_dec_subtile(),
+                                t.get_dec_rotation(),
+                                std::string( tvar ),
+                                std::string{},
+                                false,
+                                std::nullopt );
+                            continue;
+                        }
+                    }
+                    // No vehicle part on this tile
+                    var->set_vpart_content(
+                        vpart_id::NULL_ID(), 0, 0,
+                        std::string{}, std::string{},
+                        false, std::nullopt );
+                }
+            }
+        }
+    }
+
     // List all layers for a single z-level
     const std::array<decltype( &cata_tiles::draw_furniture ), 11> drawing_layers = {{
             &cata_tiles::draw_terrain, &cata_tiles::draw_furniture, &cata_tiles::draw_graffiti, &cata_tiles::draw_trap, &cata_tiles::draw_part_con,
@@ -4199,81 +4294,48 @@ bool cata_tiles::draw_vpart_roof( const tripoint_bub_ms &p, lit_level ll, int &h
 bool cata_tiles::draw_vpart( const tripoint_bub_ms &p, lit_level ll, int &height_3d,
                              const std::array<bool, 5> &invisible, bool roof )
 {
-    const auto override = vpart_override.find( p );
-    const bool overridden = override != vpart_override.end();
-    map &here = get_map();
-    const optional_vpart_position ovp = here.veh_at( p );
-    if( ovp && !invisible[0] ) {
-        const vehicle &veh = ovp->vehicle();
-        const vpart_display vd = veh.get_display_of_tile( ovp->mount_pos() );
-        if( !vd.id.is_null() ) {
-            const int subtile = vd.is_open ? open_ : vd.is_broken ? broken : 0;
-            const int rotation = angle_to_dir4( veh.face.dir() - 270_degrees );
-            if( !overridden ) {
-                int height_3d_temp = height_3d;
-                // Paint the displayed part with its color while it draws (the tint
-                // is consumed when tile_render_params is built); cleared right after.
-                pending_part_tint_ = get_vpart_tint( veh, ovp->mount_pos() );
-                const bool ret = draw_from_id_string( "vp_" + vd.id.str(), TILE_CATEGORY::VEHICLE_PART,
-                                                      empty_string, p, subtile, rotation, ll,
-                                                      nv_goggles_activated, height_3d_temp, 0, vd.variant.id );
-                pending_part_tint_ = std::nullopt;
-                if( ret && vd.has_cargo ) {
-                    draw_item_highlight( p, height_3d_temp );
-                }
-                // Do not increment height_3d for roof vparts
-                if( !roof ) {
-                    height_3d = height_3d_temp;
-                }
-                if( ret && !vd.carried_furn.empty() ) {
-                    draw_from_id_string( vd.carried_furn,
-                                         TILE_CATEGORY::FURNITURE, empty_string, p, 0, angle_to_dir4( 0_degrees ), ll, nv_goggles_activated,
-                                         height_3d );
-                }
-                return ret;
-            }
-        }
+    const tile_render_info::sprite &cap =
+        std::get<tile_render_info::sprite>( m_cur_tile->var );
+
+    if( cap.vpart_content.is_null() ) {
+        return false;
     }
-    if( overridden ) {
-        // and then draw the override vpart
-        const vpart_id &vp2 = std::get<0>( override->second );
-        if( vp2 ) {
-            const char part_mod = std::get<1>( override->second );
-            const int subtile = part_mod == 1 ? open_ : part_mod == 2 ? broken : 0;
-            const int rotation = angle_to_dir4( std::get<2>( override->second ) - 270_degrees );
-            const int draw_highlight = std::get<3>( override->second );
-            const std::string vpname = "vp_" + vp2.str();
-            // tile overrides are never memorized
-            // tile overrides are always shown with full visibility
-            int height_3d_temp = height_3d;
-            const bool ret = draw_from_id_string( vpname, TILE_CATEGORY::VEHICLE_PART, empty_string, p,
-                                                  subtile,
-                                                  rotation, lit_level::LIT, false, height_3d_temp );
-            if( ret && draw_highlight ) {
-                draw_item_highlight( p, height_3d_temp );
-            }
-            if( !roof ) {
-                height_3d = height_3d_temp;
-            }
-            return ret;
+
+    if( !invisible[0] ) {
+        // Normal or override path — both read from the per-frame cache
+        int height_3d_temp = height_3d;
+        pending_part_tint_ = cap.vpart_tint;
+        const bool ret = draw_from_id_string(
+            "vp_" + cap.vpart_content.str(),
+            TILE_CATEGORY::VEHICLE_PART, empty_string, p,
+            cap.vpart_subtile, cap.vpart_rotation, ll,
+            nv_goggles_activated, height_3d_temp, 0,
+            cap.vpart_variant );
+        pending_part_tint_ = std::nullopt;
+        if( ret && cap.vpart_has_cargo ) {
+            draw_item_highlight( p, height_3d_temp );
         }
-    } else if( !roof && invisible[0] ) {
-        // try drawing memory if invisible and not overridden
-        const memorized_tile &t = get_vpart_memory_at( here.get_abs( p ) );
-        std::string_view tid = t.get_dec_id();
-        if( !tid.empty() ) {
-            int height_3d_temp = height_3d;
-            std::string_view tvar;
-            const size_t variant_separator = tid.find( vehicles::variant_separator );
-            if( variant_separator != std::string::npos ) {
-                tvar = tid.substr( variant_separator + 1 );
-                tid = tid.substr( 0, variant_separator );
-            }
-            return draw_from_id_string(
-                       std::string( tid ), TILE_CATEGORY::VEHICLE_PART, empty_string, p, t.get_dec_subtile(),
-                       t.get_dec_rotation(), lit_level::MEMORIZED, nv_goggles_activated, height_3d_temp, 0,
-                       std::string( tvar ) );
+        if( !roof ) {
+            height_3d = height_3d_temp;
         }
+        if( ret && !cap.vpart_carried_furn.empty() ) {
+            draw_from_id_string( cap.vpart_carried_furn,
+                TILE_CATEGORY::FURNITURE, empty_string, p, 0,
+                angle_to_dir4( 0_degrees ), ll,
+                nv_goggles_activated, height_3d );
+        }
+        return ret;
+    } else if( !roof ) {
+        // Memory path: invisible, no-roof only.
+        // Use a local copy of height_3d so the memory tile does not
+        // affect z-ordering of tiles drawn after it.
+        int height_3d_mem = height_3d;
+        return draw_from_id_string(
+            cap.vpart_content.str(),
+            TILE_CATEGORY::VEHICLE_PART, empty_string, p,
+            cap.vpart_subtile, cap.vpart_rotation,
+            lit_level::MEMORIZED, nv_goggles_activated,
+            height_3d_mem, 0, cap.vpart_variant );
     }
     return false;
 }
