@@ -1320,7 +1320,7 @@
   {
     "type": "vehicle_part",
     "id": "app_electric_cooker",
-    "name": { "str": "炉灶" },
+    "name": { "str": "electric cooker" },
     "item": "electric_cooker",
     "categories": [ "utility" ],
     "location": "center",

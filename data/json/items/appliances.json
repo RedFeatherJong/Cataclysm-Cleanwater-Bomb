@@ -496,7 +496,7 @@
   {
     "type": "ITEM",
     "id": "electric_cooker",
-    "name": { "str": "断开的炉灶" },
+    "name": { "str": "disconnected electric cooker" },
     "description": "An electric cooker designed to automatically heat and cook food placed inside.  Needs to be placed and plugged into a power source.",
     "looks_like": "f_oven",
     "symbol": "#",
