@@ -137,7 +137,7 @@ std::string itype::item_measure_prefix( unsigned int quantity, item_display_type
         result = weight_to_string( weight * quantity, true, true );
     } else if( display_type == item_display_type::BY_VOLUME || (!force && perfered == item_display_type::BY_VOLUME) ) {
         result = vol_to_string( count_by_charges() &&
-                                stack_size > 0 ? volume : volume * quantity, true, true );
+                                stack_size > 0 ? volume : units::volume(volume * quantity), true, true );
     } else if( display_type == item_display_type::BY_LENGTH || (!force && perfered == item_display_type::BY_LENGTH) ) {
         // Note: item::length() has some special cases where this might not work well!
         result = length_to_string( longest_side * quantity, true );
