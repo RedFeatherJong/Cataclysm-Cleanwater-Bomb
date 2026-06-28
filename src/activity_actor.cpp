@@ -10314,15 +10314,15 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
         return;
     }
 
-    // Time required to reach the next stage, accounting for the plant furniture's growth speed
-    time_duration time_to_next_stage = 0_seconds;
-    for( int i = 0; i <= current_stage_idx; ++i ) {
-        time_to_next_stage += growth_stages[i].second;
-    }
     const float growth_multiplier = here.furn( plant_position )->plant->growth_multiplier;
-    time_to_next_stage = time_to_next_stage / growth_multiplier;
 
-    time_duration remaining = time_to_next_stage - seed->age();
+    // Total time required for the entire plant life cycle, accounting for the plant furniture's growth speed
+    time_duration total_lifecycle = 0_seconds;
+    for( const auto &stage : growth_stages ) {
+        total_lifecycle += stage.second / growth_multiplier;
+    }
+
+    time_duration remaining = total_lifecycle - seed->age();
     if( remaining < 0_seconds ) {
         remaining = 0_seconds;
     }
