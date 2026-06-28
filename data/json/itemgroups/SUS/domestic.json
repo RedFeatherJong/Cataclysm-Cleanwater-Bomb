@@ -843,7 +843,7 @@
             "entry-wrapper": "bottle_plastic_pill_painkiller"
           },
           { "group": "birth_control", "prob": 50 },
-          { "group": "estrogen_hrt", "prob": 3 }
+          { "group": "estrogen_hrt", "prob": 2 }
         ],
         "prob": 95
       },
