@@ -4387,9 +4387,9 @@ void Character::recalc_limb_energy_usage()
     }
     for( const bionic_id &bid : get_bionic_fueled_with_muscle() ) {
         if( has_active_bionic( bid ) ) {
-            bionic_powercost = bionic_powercost * 25;
+            bionic_powercost = bionic_powercost * 20;
         } else {
-            bionic_powercost = bionic_powercost * 5;
+            bionic_powercost = bionic_powercost * 2;
         }
     }
     arms_power_use = bionic_powercost;
@@ -4419,9 +4419,9 @@ void Character::recalc_limb_energy_usage()
     }
     for( const bionic_id &bid : get_bionic_fueled_with_muscle() ) {
         if( has_active_bionic( bid ) ) {
-            bionic_powercost = bionic_powercost * 25;
+            bionic_powercost = bionic_powercost * 20;
         } else {
-            bionic_powercost = bionic_powercost * 5;
+            bionic_powercost = bionic_powercost * 2;
         }
     }
     legs_power_use = bionic_powercost;
