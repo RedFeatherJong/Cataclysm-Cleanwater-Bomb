@@ -49,6 +49,7 @@
 #include "map.h"
 #include "map_iterator.h"
 #include "map_scale_constants.h"
+#include "iexamine.h"
 #include "mapdata.h"
 #include "math_parser_diag_value.h"
 #include "memory_fast.h"
@@ -1743,11 +1744,31 @@ void talk_function::field_harvest( npc &p, const std::string &place )
                     int plant_count = rng( skillLevel / 2, skillLevel );
                     plant_count *= bay.furn( plot )->plant->harvest_multiplier;
                     plant_count = std::min( std::max( plant_count, 1 ), 12 );
+                    const int seed_cnt = std::max( 1, rng( plant_count / 4, plant_count / 2 ) );
+
+                    map *bay_ptr = bay.cast_to_map();
+                    const tripoint_bub_ms bub_plot = bay_ptr->get_bub( bay.get_abs( plot ) );
+                    const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( *bay_ptr,
+                            bub_plot );
+                    const std::string stage = stage_idx >= 0 ?
+                                              seed_data.get_growth_stages()[stage_idx].first.str() : "";
+                    const std::map<std::string, double> num_ctx = {
+                        { "plant_count", static_cast<double>( plant_count ) },
+                        { "seed_count", static_cast<double>( seed_cnt ) },
+                        { "actor_is_npc", 1.0 }
+                    };
+                    const furn_t &current_furn = bay.furn( plot ).obj();
+                    if( current_furn.plant ) {
+                        iexamine::run_plant_eocs( current_furn.plant->eoc_on_harvest, p, *bay_ptr, bub_plot,
+                                                   *seed, stage, stage, {}, num_ctx );
+                    }
+                    iexamine::run_plant_eocs( seed_data.eoc_on_harvest, p, *bay_ptr, bub_plot, *seed,
+                                               stage, stage, {}, num_ctx );
 
                     // Multiply by the plant's and seed's base charges to mimic creating
                     // items similar to iexamine::harvest_plant
                     number_plants += plant_count * tmp.charges;
-                    number_seeds += std::max( 1, rng( plant_count / 4, plant_count / 2 ) ) * item_seed.charges;
+                    number_seeds += seed_cnt * item_seed.charges;
 
                     bay.i_clear( plot );
                     bay.furn_set( plot, furn_str_id::NULL_ID() );

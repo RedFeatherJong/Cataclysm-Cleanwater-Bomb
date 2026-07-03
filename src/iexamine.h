@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <list>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -214,6 +215,18 @@ int get_plant_current_stage_idx_from_effective( map &here, const tripoint_bub_ms
 bool is_plant_harvestable( map &here, const tripoint_bub_ms &p );
 bool is_plant_mature( map &here, const tripoint_bub_ms &p );
 bool is_plant_overgrown( map &here, const tripoint_bub_ms &p );
+
+// Run plant lifecycle EOCs with standard context variables.
+void run_plant_eocs(
+    const std::vector<effect_on_condition_id> &eocs,
+    Character &alpha,
+    map &here,
+    const tripoint_bub_ms &plant_pos,
+    const item &seed,
+    const std::string &old_stage,
+    const std::string &new_stage,
+    const std::map<std::string, std::string> &string_context = {},
+    const std::map<std::string, double> &num_context = {} );
 
 // Skill training common functions
 void practice_survival_while_foraging( Character &who );

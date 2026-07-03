@@ -7212,6 +7212,22 @@ void plant_seed_activity_actor::finish( player_activity &act, Character &who )
         } else {
             here.furn_set( examp, furn_f_plant_seed );
         }
+
+        item *planted_seed = iexamine::get_seed_at( here, examp );
+        if( planted_seed != nullptr ) {
+            const std::string seed_stage( "GROWTH_SEED" );
+            const furn_t &new_furn = here.furn( examp ).obj();
+            const std::map<std::string, double> num_ctx = {
+                { "actor_is_npc", who.is_npc() ? 1.0 : 0.0 }
+            };
+            if( new_furn.plant ) {
+                iexamine::run_plant_eocs( new_furn.plant->eoc_on_plant, who, here, examp, *planted_seed,
+                                           seed_stage, seed_stage, {}, num_ctx );
+            }
+            iexamine::run_plant_eocs( planted_seed->type->seed->eoc_on_plant, who, here, examp,
+                                       *planted_seed, seed_stage, seed_stage, {}, num_ctx );
+        }
+
         who.add_msg_player_or_npc( _( "You plant some %s." ), _( "<npcname> plants some %s." ),
                                    item::nname( seed_id ) );
     }
@@ -10340,8 +10356,30 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
     // Apply any stage advances immediately.
     here.grow_plant( plant_position );
 
+    item *fertilized_seed = iexamine::get_seed_at( here, plant_position );
+    if( fertilized_seed != nullptr ) {
+        const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( here, plant_position );
+        const std::string stage = stage_idx >= 0 ?
+                                  fertilized_seed->type->seed->get_growth_stages()[stage_idx].first.str() : "";
+        const std::map<std::string, std::string> string_ctx = {
+            { "fertilizer_id", fertilizer.str() }
+        };
+        const std::map<std::string, double> num_ctx = {
+            { "reduction_turns", static_cast<double>( to_turns<int>( reduction ) ) },
+            { "actor_is_npc", who.is_npc() ? 1.0 : 0.0 }
+        };
+        const furn_t &furn = here.furn( plant_position ).obj();
+        if( furn.plant ) {
+            iexamine::run_plant_eocs( furn.plant->eoc_on_fertilize, who, here, plant_position,
+                                       *fertilized_seed, stage, stage, string_ctx, num_ctx );
+        }
+        iexamine::run_plant_eocs( fertilized_seed->type->seed->eoc_on_fertilize, who, here, plant_position,
+                                   *fertilized_seed, stage, stage, string_ctx, num_ctx );
+    }
+
     //~ %1$s: plant name, %2$s: fertilizer name
-    add_msg( m_info, _( "You fertilize the %1$s with the %2$s." ), seed->get_plant_name(),
+    add_msg( m_info, _( "You fertilize the %1$s with the %2$s." ),
+             fertilized_seed ? fertilized_seed->get_plant_name() : planted.front().tname(),
              planted.front().tname() );
 
     act.set_to_null();

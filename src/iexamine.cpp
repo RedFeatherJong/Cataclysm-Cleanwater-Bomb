@@ -26,12 +26,14 @@
 #include "color.h"
 #include "construction.h"
 #include "construction_group.h"
+#include "condition.h"
 #include "coordinates.h"
 #include "craft_command.h"
 #include "crafting.h"
 #include "crafting_enums.h"
 #include "creature.h"
 #include "creature_tracker.h"
+#include "effect_on_condition.h"
 #include "cursesdef.h"
 #include "debug.h"
 #include "effect.h"
@@ -2836,9 +2838,6 @@ void iexamine::harvest_plant( Character &you, const tripoint_bub_ms &examp, bool
             return;
         } else {
             const itype &type = *seed->type;
-            player_activity act( ACT_HARVEST, to_moves<int>( 60_seconds ) );
-            you.assign_activity( act );
-            here.i_clear( examp );
 
             int skillLevel = round( you.get_skill_level( skill_survival ) );
             ///\EFFECT_SURVIVAL increases number of plants harvested from a seed
@@ -2847,6 +2846,26 @@ void iexamine::harvest_plant( Character &you, const tripoint_bub_ms &examp, bool
             plant_count *= fp->harvest_multiplier;
             plant_count = std::max( plant_count, 1 );
             int seedCount = std::max( 1, rng( plant_count / 4, plant_count / 2 ) );
+
+            const int stage_idx = get_plant_current_stage_idx_from_effective( here, examp );
+            const std::string stage = stage_idx >= 0 ? type.seed->get_growth_stages()[stage_idx].first.str() : "";
+            const std::map<std::string, std::string> string_ctx;
+            const std::map<std::string, double> num_ctx = {
+                { "plant_count", static_cast<double>( plant_count ) },
+                { "seed_count", static_cast<double>( seedCount ) },
+                { "actor_is_npc", you.is_npc() ? 1.0 : 0.0 }
+            };
+            if( fp ) {
+                run_plant_eocs( fp->eoc_on_harvest, you, here, examp, *seed, stage, stage, string_ctx,
+                                num_ctx );
+            }
+            run_plant_eocs( type.seed->eoc_on_harvest, you, here, examp, *seed, stage, stage, string_ctx,
+                            num_ctx );
+
+            player_activity act( ACT_HARVEST, to_moves<int>( 60_seconds ) );
+            you.assign_activity( act );
+            here.i_clear( examp );
+
             for( item &i : get_harvest_items( type, plant_count, seedCount, true ) ) {
                 if( from_activity ) {
                     i.set_var( "activity_var", you.name );
@@ -3101,6 +3120,17 @@ void iexamine::water_plant( Character &you, const tripoint_bub_ms &examp )
         set_plant_last_water_check( *seed, calendar::turn );
     }
     set_plant_water( *seed, std::min( max_water, current_water + irrigation::WATER_PER_POUR ) );
+
+    const int stage_idx = get_plant_current_stage_idx_from_effective( here, examp );
+    const std::string stage = stage_idx >= 0 ?
+                              seed->type->seed->get_growth_stages()[stage_idx].first.str() : "";
+    if( furn.plant ) {
+        run_plant_eocs( furn.plant->eoc_on_water, you, here, examp, *seed, stage, stage,
+                        {}, { { "water_added", static_cast<double>( irrigation::WATER_PER_POUR ) } } );
+    }
+    run_plant_eocs( seed->type->seed->eoc_on_water, you, here, examp, *seed, stage, stage,
+                    {}, { { "water_added", static_cast<double>( irrigation::WATER_PER_POUR ) } } );
+
     you.add_msg_if_player( m_good, _( "You pour some water on the %s." ), seed->get_plant_name() );
 }
 
@@ -3330,6 +3360,49 @@ bool iexamine::is_plant_overgrown( map &here, const tripoint_bub_ms &p )
     }
     const int current_stage_idx = get_plant_current_stage_idx_from_effective( here, p );
     return current_stage_idx >= overgrown_stage_idx;
+}
+
+void iexamine::run_plant_eocs(
+    const std::vector<effect_on_condition_id> &eocs,
+    Character &alpha,
+    map &here,
+    const tripoint_bub_ms &plant_pos,
+    const item &seed,
+    const std::string &old_stage,
+    const std::string &new_stage,
+    const std::map<std::string, std::string> &string_context,
+    const std::map<std::string, double> &num_context )
+{
+    if( eocs.empty() ) {
+        return;
+    }
+
+    const tripoint_abs_ms abs_pos = here.get_abs( plant_pos );
+    dialogue d( get_talker_for( alpha ), nullptr );
+
+    write_var_value( var_type::context, "plant_pos", &d, abs_pos );
+    write_var_value( var_type::context, "plant_pos_x", &d, static_cast<double>( abs_pos.x() ) );
+    write_var_value( var_type::context, "plant_pos_y", &d, static_cast<double>( abs_pos.y() ) );
+    write_var_value( var_type::context, "plant_pos_z", &d, static_cast<double>( abs_pos.z() ) );
+    write_var_value( var_type::context, "seed_id", &d, seed.typeId().str() );
+    write_var_value( var_type::context, "furniture_id", &d, here.furn( plant_pos ).id().str() );
+    write_var_value( var_type::context, "old_stage", &d, old_stage );
+    write_var_value( var_type::context, "new_stage", &d, new_stage );
+    write_var_value( var_type::context, "effective_growth_time", &d,
+                     static_cast<double>( get_plant_effective_growth_turns( seed ) ) );
+    write_var_value( var_type::context, "water", &d,
+                     static_cast<double>( get_plant_water( seed ) ) );
+
+    for( const auto &kv : string_context ) {
+        write_var_value( var_type::context, kv.first, &d, kv.second );
+    }
+    for( const auto &kv : num_context ) {
+        write_var_value( var_type::context, kv.first, &d, kv.second );
+    }
+
+    for( const effect_on_condition_id &eoc : eocs ) {
+        eoc->activate_activation_only( d, "a plant lifecycle event", "plant event", "plant" );
+    }
 }
 
 static void add_firestarter( item *it, std::multimap<int, item *> &firestarters, Character &you,

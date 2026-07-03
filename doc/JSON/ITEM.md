@@ -1037,6 +1037,14 @@ Gun mods can be defined like this:
 "required_terrain_flag": "PLANTABLE" // A tag that terrain and furniture would need to have in order for the seed to be plantable there.
 // Default is "PLANTABLE", and using this will cause any terain the plant is wrown on to turn into dirt once the plant is planted, unless furniture is used.
 // Using any other tag will not turn the terrain into dirt.
+// Plant lifecycle EOC hooks; see JSON_INFO.md "Plant lifecycle EOCs" for details.
+"eoc_on_plant": [ "eoc_id" ],
+"eoc_on_grow": [ "eoc_id" ],
+"eoc_on_mature": [ "eoc_id" ],
+"eoc_on_overgrow": [ "eoc_id" ],
+"eoc_on_harvest": [ "eoc_id" ],
+"eoc_on_fertilize": [ "eoc_id" ],
+"eoc_on_water": [ "eoc_id" ]
 ```
 
 ### Brewables

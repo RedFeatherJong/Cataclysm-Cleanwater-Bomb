@@ -1,0 +1,113 @@
+[
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_PLANTED",
+    "effect": [ { "math": [ "test_planted = 1" ] } ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_GROW",
+    "effect": [
+      {
+        "copy_var": { "context_val": "new_stage" },
+        "target_var": { "global_val": "test_grow_stage" }
+      }
+    ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_MATURE",
+    "effect": [ { "math": [ "test_mature = 1" ] } ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_HARVEST",
+    "effect": [
+      { "math": [ "test_harvest_count = context_val(plant_count)" ] }
+    ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_FERTILIZE",
+    "effect": [
+      {
+        "copy_var": { "context_val": "fertilizer_id" },
+        "target_var": { "global_val": "test_fertilizer" }
+      }
+    ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_WATER",
+    "effect": [
+      { "math": [ "test_water_added = context_val(water_added)" ] }
+    ]
+  },
+  {
+    "type": "furniture",
+    "id": "test_f_plant_seed",
+    "copy-from": "f_plant_seed",
+    "name": "test plant seed",
+    "plant_data": {
+      "transform": "test_f_plant_seedling",
+      "base": "f_null",
+      "eoc_on_plant": [ "EOC_TEST_PLANT_PLANTED" ],
+      "eoc_on_grow": [ "EOC_TEST_PLANT_GROW" ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "test_f_plant_seedling",
+    "copy-from": "f_plant_seedling",
+    "name": "test plant seedling",
+    "plant_data": {
+      "transform": "test_f_plant_mature",
+      "base": "f_null",
+      "eoc_on_grow": [ "EOC_TEST_PLANT_GROW" ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "test_f_plant_mature",
+    "copy-from": "f_plant_mature",
+    "name": "test plant mature",
+    "plant_data": {
+      "transform": "test_f_plant_harvest",
+      "base": "f_null",
+      "eoc_on_mature": [ "EOC_TEST_PLANT_MATURE" ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "test_f_plant_harvest",
+    "copy-from": "f_plant_harvest",
+    "name": "test plant harvest",
+    "plant_data": {
+      "transform": "f_null",
+      "base": "f_null",
+      "eoc_on_harvest": [ "EOC_TEST_PLANT_HARVEST" ]
+    }
+  },
+  {
+    "type": "ITEM",
+    "subtypes": [ "SEED", "COMESTIBLE" ],
+    "id": "test_seed_eoc",
+    "copy-from": "soybean_seed",
+    "name": { "str_sp": "test EOC seeds" },
+    "description": "A fast-growing test seed with lifecycle EOC hooks.",
+    "plant_name": "test EOC plant",
+    "fruit": "raw_edamame",
+    "growth_stages": [
+      { "GROWTH_SEED": "1 second" },
+      { "GROWTH_SEEDLING": "1 second" },
+      { "GROWTH_MATURE": "1 second" },
+      { "GROWTH_HARVEST": "1 second" }
+    ],
+    "eoc_on_plant": [ "EOC_TEST_PLANT_PLANTED" ],
+    "eoc_on_grow": [ "EOC_TEST_PLANT_GROW" ],
+    "eoc_on_mature": [ "EOC_TEST_PLANT_MATURE" ],
+    "eoc_on_harvest": [ "EOC_TEST_PLANT_HARVEST" ],
+    "eoc_on_fertilize": [ "EOC_TEST_PLANT_FERTILIZE" ],
+    "eoc_on_water": [ "EOC_TEST_PLANT_WATER" ]
+  }
+]

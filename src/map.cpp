@@ -10127,8 +10127,8 @@ void map::fill_funnels( const tripoint_bub_ms &p, const time_point &since )
 
 void map::grow_plant( const tripoint_bub_ms &p )
 {
-    const furn_t &furn = this->furn( p ).obj();
-    if( !furn.has_flag( ter_furn_flag::TFLAG_PLANT ) ) {
+    const furn_t &initial_furn = this->furn( p ).obj();
+    if( !initial_furn.has_flag( ter_furn_flag::TFLAG_PLANT ) ) {
         return;
     }
     // Can't use item_stack::only_item() since there might be fertilizer
@@ -10144,7 +10144,7 @@ void map::grow_plant( const tripoint_bub_ms &p )
         const tripoint_abs_sm sm_pos = project_to<coords::sm>( ms_pos );
         const oter_id ot = overmap_buffer.ter( project_to<coords::omt>( ms_pos ) );
         dbg( D_ERROR ) << "plant furniture has no seed item.  "
-                       << "furniture: " << furn.id.str()
+                       << "furniture: " << initial_furn.id.str()
                        << ", submap absolute: " << sm_pos
                        << ", map square absolute: " << ms_pos
                        << ", class map map square relative: " << p
@@ -10163,14 +10163,14 @@ void map::grow_plant( const tripoint_bub_ms &p )
     // Water / irrigation handling.  Irrigable furniture/plants consume water daily to grow faster.
     // We simulate day-by-day and switch furniture/growth_multiplier when the plant advances stages.
     time_duration effective_growth_time = 0_seconds;
-    const int initial_max_water = iexamine::get_plant_max_water( furn );
+    const int initial_max_water = iexamine::get_plant_max_water( initial_furn );
     if( initial_max_water > 0 ) {
         const time_point last_check = iexamine::get_plant_last_water_check( *seed );
         if( last_check == time_point::from_turn( 0 ) ||
             !seed->has_var( "seed_effective_growth_turns" ) ) {
             // Old saves / first actualization: estimate effective growth time from current age,
             // but clamp to at least the threshold of the current stage to avoid regressing.
-            effective_growth_time = seed->age() * furn.plant->growth_multiplier;
+            effective_growth_time = seed->age() * initial_furn.plant->growth_multiplier;
             const int current_stage_idx = iexamine::get_plant_current_stage_idx( *this, p, growth_stages );
             const time_duration min_effective_for_stage =
                 iexamine::get_plant_stage_threshold( growth_stages, current_stage_idx );
@@ -10255,7 +10255,7 @@ void map::grow_plant( const tripoint_bub_ms &p )
         // Non-irrigated plants grow strictly with real time.  Keep the
         // authoritative effective-growth-time variable in sync so helpers that
         // rely on it agree with the stage computed here.
-        effective_growth_time = seed->age() * furn.plant->growth_multiplier;
+        effective_growth_time = seed->age() * initial_furn.plant->growth_multiplier;
         iexamine::set_plant_effective_growth_turns( *seed, to_turns<int>( effective_growth_time ) );
     }
 
@@ -10282,9 +10282,16 @@ void map::grow_plant( const tripoint_bub_ms &p )
         };
     };
 
+    const int start_stage_idx = static_cast<int>( std::distance(
+            growth_stages.begin(),
+            std::find_if( growth_stages.begin(), growth_stages.end(), check_flag( current_stage.str() ) ) ) );
+
     const int stages_to_advance = std::distance(
                                       std::find_if( growth_stages.begin(), growth_stages.end(), check_flag( current_stage.str() ) ),
                                       std::find_if( growth_stages.begin(), growth_stages.end(), check_flag( target_stage.str() ) ) );
+
+    const int mature_stage_idx = iexamine::get_plant_mature_stage_idx( growth_stages );
+    const int overgrown_stage_idx = iexamine::get_plant_overgrown_stage_idx( growth_stages );
 
     add_msg_debug( debugmode::DF_MAP,
                    "Checking growth on a %s, aged %s. Current stage: %s. Target stage: %s. Advancing %d stages.",
@@ -10298,7 +10305,18 @@ void map::grow_plant( const tripoint_bub_ms &p )
         return;
     }
 
+    Character &alpha = get_avatar();
+
     for( int i = 0; i < stages_to_advance; i++ ) {
+        // EOCs from the previous iteration may have modified the tile; refresh the seed.
+        item *current_seed = iexamine::get_seed_at( *this, p );
+        if( current_seed == nullptr ) {
+            break;
+        }
+
+        // Refresh the item stack each iteration in case EOCs changed it.
+        items = i_at( p );
+
         // Remove fertilizer if any
         map_stack::iterator fertilizer = std::find_if( items.begin(), items.end(), []( const item & it ) {
             return it.has_flag( flag_FERTILIZER );
@@ -10307,10 +10325,49 @@ void map::grow_plant( const tripoint_bub_ms &p )
             items.erase( fertilizer );
         }
         // spawn appropriate amount of rot_spawn, equivalent to number of times we iterate this loop
-        rotten_item_spawn( *seed, tripoint_bub_ms( p ) );
+        rotten_item_spawn( *current_seed, tripoint_bub_ms( p ) );
         // Get an updated reference to the furniture each time we go through this loop, to make sure we transform each step in turn
         const furn_t &current_furn = this->furn( p ).obj();
         furn_set( p, furn_str_id( current_furn.plant->transform ) );
+
+        // EOCs may move or remove the seed; refresh it after the furniture transform.
+        current_seed = iexamine::get_seed_at( *this, p );
+        if( current_seed == nullptr ) {
+            break;
+        }
+
+        const int old_stage_idx = start_stage_idx + i;
+        const int new_stage_idx = start_stage_idx + i + 1;
+        const std::string old_stage = growth_stages[old_stage_idx].first.str();
+        const std::string new_stage = growth_stages[new_stage_idx].first.str();
+        const furn_t &new_furn = this->furn( p ).obj();
+
+        if( new_furn.plant ) {
+            iexamine::run_plant_eocs( new_furn.plant->eoc_on_grow, alpha, *this, p, *current_seed,
+                                       old_stage, new_stage );
+        }
+        iexamine::run_plant_eocs( current_seed->type->seed->eoc_on_grow, alpha, *this, p, *current_seed,
+                                   old_stage, new_stage );
+
+        if( mature_stage_idx >= 0 && old_stage_idx < mature_stage_idx &&
+            new_stage_idx >= mature_stage_idx ) {
+            if( new_furn.plant ) {
+                iexamine::run_plant_eocs( new_furn.plant->eoc_on_mature, alpha, *this, p, *current_seed,
+                                           old_stage, new_stage );
+            }
+            iexamine::run_plant_eocs( current_seed->type->seed->eoc_on_mature, alpha, *this, p,
+                                       *current_seed, old_stage, new_stage );
+        }
+
+        if( overgrown_stage_idx >= 0 && old_stage_idx < overgrown_stage_idx &&
+            new_stage_idx >= overgrown_stage_idx ) {
+            if( new_furn.plant ) {
+                iexamine::run_plant_eocs( new_furn.plant->eoc_on_overgrow, alpha, *this, p, *current_seed,
+                                           old_stage, new_stage );
+            }
+            iexamine::run_plant_eocs( current_seed->type->seed->eoc_on_overgrow, alpha, *this, p,
+                                       *current_seed, old_stage, new_stage );
+        }
     }
 }
 

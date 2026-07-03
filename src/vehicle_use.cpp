@@ -1079,9 +1079,27 @@ void vehicle::operate_reaper( map &here )
             // Otherworldly plants, the earth-made reaper can not handle those.
             continue;
         }
-        here.furn_set( reaper_pos, furn_str_id::NULL_ID() );
-        // Secure the seed type before i_clear destroys the item.
+
+        // Secure the seed type before EOCs or i_clear destroy the item.
         const itype &seed_type = *seed->type;
+
+        const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( here, reaper_pos );
+        const std::string stage = stage_idx >= 0 ?
+                                  seed_type.seed->get_growth_stages()[stage_idx].first.str() : "";
+        const std::map<std::string, double> num_ctx = {
+            { "plant_count", static_cast<double>( plant_produced ) },
+            { "seed_count", static_cast<double>( seed_produced ) },
+            { "actor_is_npc", 0.0 }
+        };
+        const furn_t &furn = here.furn( reaper_pos ).obj();
+        if( furn.plant ) {
+            iexamine::run_plant_eocs( furn.plant->eoc_on_harvest, get_avatar(), here, reaper_pos, *seed,
+                                       stage, stage, {}, num_ctx );
+        }
+        iexamine::run_plant_eocs( seed_type.seed->eoc_on_harvest, get_avatar(), here, reaper_pos,
+                                   *seed, stage, stage, {}, num_ctx );
+
+        here.furn_set( reaper_pos, furn_str_id::NULL_ID() );
         here.i_clear( reaper_pos );
         for( item &i : iexamine::get_harvest_items(
                  seed_type, plant_produced, seed_produced, false ) ) {
@@ -1138,6 +1156,22 @@ void vehicle::operate_planter( map &here )
                     here.add_item( loc, tmp );
                     i->charges--;
                 }
+
+                item *planted_seed = iexamine::get_seed_at( here, loc );
+                if( planted_seed != nullptr ) {
+                    const std::string seed_stage( "GROWTH_SEED" );
+                    const furn_t &new_furn = here.furn( loc ).obj();
+                    const std::map<std::string, double> num_ctx = {
+                        { "actor_is_npc", 0.0 }
+                    };
+                    if( new_furn.plant ) {
+                        iexamine::run_plant_eocs( new_furn.plant->eoc_on_plant, get_avatar(), here, loc,
+                                                   *planted_seed, seed_stage, seed_stage, {}, num_ctx );
+                    }
+                    iexamine::run_plant_eocs( planted_seed->type->seed->eoc_on_plant, get_avatar(), here,
+                                               loc, *planted_seed, seed_stage, seed_stage, {}, num_ctx );
+                }
+
                 break;
             }
         }

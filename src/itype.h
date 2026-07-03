@@ -1259,7 +1259,7 @@ struct islot_bionic {
 struct islot_seed {
         // Generic factory stuff
         bool was_loaded = false;
-        void deserialize( const JsonObject &jo );
+        void deserialize( const JsonObject &jo, std::string_view src );
 
         /**
          * Amount of harvested charges of fruits is divided by this number.
@@ -1289,6 +1289,16 @@ struct islot_seed {
          * How much water the planted crop consumes per day.  Only used when planted in irrigable furniture.
          */
         int water_consumption = irrigation::DEFAULT_SEED_WATER_CONSUMPTION;
+        /**
+         * EOCs triggered during the plant lifecycle.
+         */
+        std::vector<effect_on_condition_id> eoc_on_plant;
+        std::vector<effect_on_condition_id> eoc_on_grow;
+        std::vector<effect_on_condition_id> eoc_on_mature;
+        std::vector<effect_on_condition_id> eoc_on_overgrow;
+        std::vector<effect_on_condition_id> eoc_on_harvest;
+        std::vector<effect_on_condition_id> eoc_on_fertilize;
+        std::vector<effect_on_condition_id> eoc_on_water;
         islot_seed() = default;
 
         const std::vector<std::pair<flag_id, time_duration>> &get_growth_stages() const;
@@ -1813,7 +1823,7 @@ struct itype {
         // used for generic_factory for copy-from
         bool was_loaded = false;
         void load( const JsonObject &jo, std::string_view src );
-        void load_slots( const JsonObject &jo, bool was_loaded );
+        void load_slots( const JsonObject &jo, bool was_loaded, std::string_view src );
 };
 
 void load_charge_removal_blacklist( const JsonObject &jo, std::string_view src );

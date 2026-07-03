@@ -3560,7 +3560,31 @@ std::pair<size_t, std::string> basecamp::farm_action( const point_rel_omt &dir, 
                             plant_count *= farm_map.furn( pos )->plant->harvest_multiplier;
                             plant_count = std::min( std::max( plant_count, 1 ), 12 );
                             int seed_cnt = std::max( 1, rng( plant_count / 4, plant_count / 2 ) );
-                            for( item &i : iexamine::get_harvest_items( *seed->type, plant_count,
+
+                            map *farm_map_ptr = farm_map.cast_to_map();
+                            // Secure the seed type before EOCs or i_clear destroy the item.
+                            const itype &seed_type = *seed->type;
+
+                            const tripoint_bub_ms bub_pos = farm_map_ptr->get_bub( farm_map.get_abs( pos ) );
+                            const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective(
+                                                      *farm_map_ptr, bub_pos );
+                            const std::string stage = stage_idx >= 0 ?
+                                                      seed_type.seed->get_growth_stages()[stage_idx].first.str() : "";
+                            const std::map<std::string, double> num_ctx = {
+                                { "plant_count", static_cast<double>( plant_count ) },
+                                { "seed_count", static_cast<double>( seed_cnt ) },
+                                { "actor_is_npc", 1.0 }
+                            };
+                            Character &actor = *comp;
+                            const furn_t &current_furn = farm_map.furn( pos ).obj();
+                            if( current_furn.plant ) {
+                                iexamine::run_plant_eocs( current_furn.plant->eoc_on_harvest, actor,
+                                                           *farm_map_ptr, bub_pos, *seed, stage, stage, {}, num_ctx );
+                            }
+                            iexamine::run_plant_eocs( seed_type.seed->eoc_on_harvest, actor, *farm_map_ptr,
+                                                       bub_pos, *seed, stage, stage, {}, num_ctx );
+
+                            for( item &i : iexamine::get_harvest_items( seed_type, plant_count,
                                     seed_cnt, true ) ) {
                                 here.add_item_or_charges( player_character.pos_bub(), i );
                             }
