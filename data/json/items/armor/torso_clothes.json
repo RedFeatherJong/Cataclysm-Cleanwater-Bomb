@@ -1794,7 +1794,7 @@
     "faults": [ { "fault_group": "fabric_cotton" } ],
     "warmth": 5,
     "material_thickness": 0.2,
-    "flags": [ "VARSIZE" ],
+    "flags": [ "VARSIZE", "COSPLAY_COSTUME" ],
     "armor": [
       { "covers": [ "torso", "arm_l", "arm_r" ], "coverage": 85, "encumbrance": 4 },
       {
@@ -1825,7 +1825,7 @@
     "faults": [ { "fault_group": "fabric_cotton" } ],
     "warmth": 5,
     "material_thickness": 0.2,
-    "flags": [ "VARSIZE" ],
+    "flags": [ "VARSIZE", "COSPLAY_COSTUME" ],
     "armor": [
       { "covers": [ "torso" ], "coverage": 85, "encumbrance": 4 },
       {
@@ -1950,7 +1950,7 @@
     "faults": [ { "fault_group": "fabric_cotton" } ],
     "warmth": 20,
     "material_thickness": 0.4,
-    "flags": [ "VARSIZE" ],
+    "flags": [ "VARSIZE", "COSPLAY_COSTUME" ],
     "armor": [
       { "covers": [ "torso" ], "coverage": 95, "encumbrance": 10 },
       { "covers": [ "arm_l", "arm_r" ], "coverage": 95, "encumbrance": 8 },
@@ -1980,7 +1980,7 @@
     "faults": [ { "fault_group": "fabric_cotton" } ],
     "warmth": 25,
     "material_thickness": 0.8,
-    "flags": [ "VARSIZE" ],
+    "flags": [ "VARSIZE", "COSPLAY_COSTUME" ],
     "armor": [
       { "covers": [ "torso" ], "coverage": 85, "encumbrance": 8 },
       { "covers": [ "arm_l", "arm_r" ], "coverage": 85, "encumbrance": 6 },
@@ -2007,7 +2007,7 @@
     "faults": [ { "fault_group": "fabric_cotton" } ],
     "warmth": 15,
     "material_thickness": 0.2,
-    "flags": [ "VARSIZE" ],
+    "flags": [ "VARSIZE", "COSPLAY_COSTUME" ],
     "armor": [
       { "covers": [ "torso" ], "coverage": 75, "encumbrance": 4 },
       {

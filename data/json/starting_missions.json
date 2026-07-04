@@ -371,12 +371,7 @@
     "goal": "MGOAL_CONDITION",
     "goal_condition": {
       "or": [
-        { "u_has_item_with_flag": "COSPLAY_COSTUME" },
-        { "u_has_item": "ninja_dress" },
-        { "u_has_item": "ninja_dress_sleeveless" },
-        { "u_has_item": "santa_dress" },
-        { "u_has_item": "santa_dress_short" },
-        { "u_has_item": "santa_dress_long" }
+        { "u_has_item_with_flag": "COSPLAY_COSTUME" }
       ]
     },
     "difficulty": 2,
