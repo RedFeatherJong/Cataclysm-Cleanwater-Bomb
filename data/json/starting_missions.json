@@ -369,11 +369,7 @@
     "name": { "str": "Find some cosplay suits" },
     "description": "The world could have ended, but there are still some fantastic costumes out there, just waiting for you to wear them.  Search them until you find them.",
     "goal": "MGOAL_CONDITION",
-    "goal_condition": {
-      "or": [
-        { "u_has_item_with_flag": "COSPLAY_COSTUME" }
-      ]
-    },
+    "goal_condition": { "u_has_item_with_flag": "COSPLAY_COSTUME" },
     "difficulty": 2,
     "value": 0,
     "end": {
