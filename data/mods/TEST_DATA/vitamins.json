@@ -60,5 +60,128 @@
     "delete": {
       "disease": [ [ -79, -60 ] ]
     }
+  },
+  {
+    "id": "test_vit_excess_base",
+    "type": "vitamin",
+    "vit_type": "vitamin",
+    "name": { "str": "Excess Base" },
+    "min": -100,
+    "max": 100,
+    "rate": "1 h",
+    "disease_excess": [ [ 10, 19 ], [ 20, 29 ] ]
+  },
+  {
+    "id": "test_vit_excess_derived",
+    "copy-from": "test_vit_excess_base",
+    "type": "vitamin",
+    "name": { "str": "Excess Derived" },
+    "extend": { "disease_excess": [ [ 30, 39 ] ] },
+    "delete": { "disease_excess": [ [ 20, 29 ] ] }
+  },
+  {
+    "id": "test_vit_empty_base",
+    "type": "vitamin",
+    "vit_type": "vitamin",
+    "name": { "str": "Empty Base" },
+    "min": -100,
+    "max": 100,
+    "rate": "1 h"
+  },
+  {
+    "id": "test_vit_empty_derived",
+    "copy-from": "test_vit_empty_base",
+    "type": "vitamin",
+    "name": { "str": "Empty Derived" },
+    "extend": {
+      "flags": [ "TEST_FLAG_EMPTY" ],
+      "disease": [ [ -50, -40 ] ],
+      "decays_into": [ [ "test_vitv", 3 ] ]
+    }
+  },
+  {
+    "id": "test_vit_delete_all_base",
+    "type": "vitamin",
+    "vit_type": "vitamin",
+    "name": { "str": "Delete All Base" },
+    "min": -100,
+    "max": 100,
+    "rate": "1 h",
+    "flags": [ "TEST_FLAG_A", "TEST_FLAG_B" ],
+    "disease": [ [ -100, -80 ] ]
+  },
+  {
+    "id": "test_vit_delete_all_derived",
+    "copy-from": "test_vit_delete_all_base",
+    "type": "vitamin",
+    "name": { "str": "Delete All Derived" },
+    "delete": {
+      "flags": [ "TEST_FLAG_A", "TEST_FLAG_B" ],
+      "disease": [ [ -100, -80 ] ]
+    }
+  },
+  {
+    "id": "test_vit_override_and_extend",
+    "copy-from": "test_vit_extend_base",
+    "type": "vitamin",
+    "name": { "str": "Override and Extend" },
+    "max": 200,
+    "flags": [ "TEST_FLAG_C" ],
+    "extend": { "flags": [ "TEST_FLAG_D" ] }
+  },
+  {
+    "id": "test_vit_chain_root",
+    "type": "vitamin",
+    "vit_type": "vitamin",
+    "name": { "str": "Chain Root" },
+    "min": -100,
+    "max": 100,
+    "rate": "1 h",
+    "flags": [ "ROOT" ]
+  },
+  {
+    "id": "test_vit_chain_mid",
+    "copy-from": "test_vit_chain_root",
+    "type": "vitamin",
+    "name": { "str": "Chain Mid" },
+    "extend": { "flags": [ "MID" ] }
+  },
+  {
+    "id": "test_vit_chain_leaf",
+    "copy-from": "test_vit_chain_mid",
+    "type": "vitamin",
+    "name": { "str": "Chain Leaf" },
+    "extend": { "flags": [ "LEAF" ] }
+  },
+  {
+    "id": "test_vit_override",
+    "type": "vitamin",
+    "vit_type": "vitamin",
+    "name": { "str": "Override Original" },
+    "min": -100,
+    "max": 100,
+    "rate": "1 h"
+  },
+  {
+    "id": "test_vit_override",
+    "type": "vitamin",
+    "name": { "str": "Override Replaced" },
+    "min": -200,
+    "max": 200,
+    "rate": "2 h"
+  },
+  {
+    "id": "test_vit_flag_dedup",
+    "copy-from": "test_vit_extend_base",
+    "type": "vitamin",
+    "name": { "str": "Flag Dedup" },
+    "extend": { "flags": [ "TEST_FLAG_A" ] }
+  },
+  {
+    "id": "test_vit_decay_dup",
+    "copy-from": "test_vit_extend_base",
+    "type": "vitamin",
+    "name": { "str": "Decay Dup" },
+    "extend": { "decays_into": [ [ "test_vitv", 5 ] ] }
   }
 ]
