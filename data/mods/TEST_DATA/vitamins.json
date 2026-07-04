@@ -126,7 +126,12 @@
     "type": "vitamin",
     "name": { "str": "Override and Extend" },
     "max": 200,
-    "flags": [ "TEST_FLAG_C" ],
+    "flags": [ "TEST_FLAG_C" ]
+  },
+  {
+    "id": "test_vit_override_and_extend",
+    "copy-from": "test_vit_override_and_extend",
+    "type": "vitamin",
     "extend": { "flags": [ "TEST_FLAG_D" ] }
   },
   {
