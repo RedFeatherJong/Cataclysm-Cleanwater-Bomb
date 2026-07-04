@@ -512,7 +512,7 @@
   {
     "id": "COSPLAY_PROPS",
     "type": "json_flag",
-    "info": "This clothing is <info>cosplay prop</info>.",
+    "info": "This item is <info>cosplay prop</info>.",
     "conflicts": [ "COSPLAY_COSTUME" ]
   },
   {
