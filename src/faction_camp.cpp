@@ -38,6 +38,8 @@
 #include "cursesdef.h"
 #include "debug.h"
 #include "enums.h"
+#include "event.h"
+#include "event_bus.h"
 #include "faction.h"
 #include "flag.h"
 #include "game.h"
@@ -3566,6 +3568,13 @@ std::pair<size_t, std::string> basecamp::farm_action( const point_rel_omt &dir, 
                             const itype &seed_type = *seed->type;
 
                             const tripoint_bub_ms bub_pos = farm_map_ptr->get_bub( farm_map.get_abs( pos ) );
+
+                            // Send global event before per-seed/per-furniture hooks.
+                            const furn_str_id furn_id = farm_map.furn( pos ).id();
+                            get_event_bus().send<event_type::character_harvests_plant>(
+                                comp->getID(), farm_map.get_abs( pos ).raw(), seed_type.get_id(), furn_id,
+                                plant_count, seed_cnt );
+
                             const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective(
                                                       *farm_map_ptr, bub_pos );
                             const std::string stage = stage_idx >= 0 ?

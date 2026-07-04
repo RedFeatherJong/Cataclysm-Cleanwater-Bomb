@@ -7215,8 +7215,13 @@ void plant_seed_activity_actor::finish( player_activity &act, Character &who )
 
         item *planted_seed = iexamine::get_seed_at( here, examp );
         if( planted_seed != nullptr ) {
-            const std::string seed_stage( "GROWTH_SEED" );
             const furn_t &new_furn = here.furn( examp ).obj();
+
+            // Send global event before per-seed/per-furniture hooks.
+            get_event_bus().send<event_type::character_plants_seed>(
+                who.getID(), here.get_abs( examp ).raw(), planted_seed->typeId(), new_furn.id );
+
+            const std::string seed_stage( "GROWTH_SEED" );
             const std::map<std::string, double> num_ctx = {
                 { "actor_is_npc", who.is_npc() ? 1.0 : 0.0 }
             };
@@ -10358,6 +10363,13 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
 
     item *fertilized_seed = iexamine::get_seed_at( here, plant_position );
     if( fertilized_seed != nullptr ) {
+        const furn_t &furn = here.furn( plant_position ).obj();
+
+        // Send global event before per-seed/per-furniture hooks.
+        get_event_bus().send<event_type::character_fertilizes_plant>(
+            who.getID(), here.get_abs( plant_position ).raw(), fertilized_seed->typeId(), furn.id,
+            fertilizer, to_turns<int>( reduction ) );
+
         const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( here, plant_position );
         const std::string stage = stage_idx >= 0 ?
                                   fertilized_seed->type->seed->get_growth_stages()[stage_idx].first.str() : "";
@@ -10368,7 +10380,6 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
             { "reduction_turns", static_cast<double>( to_turns<int>( reduction ) ) },
             { "actor_is_npc", who.is_npc() ? 1.0 : 0.0 }
         };
-        const furn_t &furn = here.furn( plant_position ).obj();
         if( furn.plant ) {
             iexamine::run_plant_eocs( furn.plant->eoc_on_fertilize, who, here, plant_position,
                                        *fertilized_seed, stage, stage, string_ctx, num_ctx );

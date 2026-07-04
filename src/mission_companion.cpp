@@ -33,6 +33,8 @@
 #include "debug.h"
 #include "enum_conversions.h"
 #include "enums.h"
+#include "event.h"
+#include "event_bus.h"
 #include "faction.h"
 #include "faction_camp.h"
 #include "flexbuffer_json.h"
@@ -1748,6 +1750,13 @@ void talk_function::field_harvest( npc &p, const std::string &place )
 
                     map *bay_ptr = bay.cast_to_map();
                     const tripoint_bub_ms bub_plot = bay_ptr->get_bub( bay.get_abs( plot ) );
+
+                    // Send global event before per-seed/per-furniture hooks.
+                    const furn_str_id furn_id = bay.furn( plot ).id();
+                    get_event_bus().send<event_type::character_harvests_plant>(
+                        p.getID(), bay.get_abs( plot ).raw(), seed->typeId(), furn_id,
+                        plant_count, seed_cnt );
+
                     const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( *bay_ptr,
                             bub_plot );
                     const std::string stage = stage_idx >= 0 ?

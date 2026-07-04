@@ -2565,6 +2565,10 @@ void iexamine::flower_marloss( Character &you, const tripoint_bub_ms &examp )
         none( you, examp );
         return;
     }
+
+    get_event_bus().send<event_type::character_harvests_plant>(
+        you.getID(), here.get_abs( examp ).raw(), itype_marloss_seed, here.furn( examp ).id(), 0, 0 );
+
     here.furn_set( examp, furn_str_id::NULL_ID() );
     here.spawn_item( you.pos_bub(), itype_marloss_seed, 1, 3, calendar::turn );
     iexamine_helper::handle_harvest( you, itype_withered, false );
@@ -2808,10 +2812,15 @@ void iexamine::harvest_plant( Character &you, const tripoint_bub_ms &examp, bool
     }
 
     const itype_id &seedType = seed->typeId();
+    const furn_str_id old_furn_id = here.furn( examp ).id();
     if( seedType == itype_fungal_seeds ) {
+        get_event_bus().send<event_type::character_harvests_plant>(
+            you.getID(), here.get_abs( examp ).raw(), seedType, old_furn_id, 0, 0 );
         fungus( you, examp );
         here.i_clear( examp );
     } else if( seedType == itype_marloss_seed ) {
+        get_event_bus().send<event_type::character_harvests_plant>(
+            you.getID(), here.get_abs( examp ).raw(), seedType, old_furn_id, 0, 0 );
         fungus( you, examp );
         here.i_clear( examp );
         if( you.has_trait( trait_M_DEPENDENT ) && ( you.get_kcal_percent() < 0.8f ||
@@ -2846,6 +2855,11 @@ void iexamine::harvest_plant( Character &you, const tripoint_bub_ms &examp, bool
             plant_count *= fp->harvest_multiplier;
             plant_count = std::max( plant_count, 1 );
             int seedCount = std::max( 1, rng( plant_count / 4, plant_count / 2 ) );
+
+            // Send global event before per-seed/per-furniture hooks.
+            get_event_bus().send<event_type::character_harvests_plant>(
+                you.getID(), here.get_abs( examp ).raw(), type.get_id(), here.furn( examp ).id(),
+                plant_count, seedCount );
 
             const int stage_idx = get_plant_current_stage_idx_from_effective( here, examp );
             const std::string stage = stage_idx >= 0 ? type.seed->get_growth_stages()[stage_idx].first.str() : "";
@@ -3120,6 +3134,11 @@ void iexamine::water_plant( Character &you, const tripoint_bub_ms &examp )
         set_plant_last_water_check( *seed, calendar::turn );
     }
     set_plant_water( *seed, std::min( max_water, current_water + irrigation::WATER_PER_POUR ) );
+
+    // Send global event before per-seed/per-furniture hooks.
+    get_event_bus().send<event_type::character_waters_plant>(
+        you.getID(), here.get_abs( examp ).raw(), seed->typeId(), furn.id,
+        irrigation::WATER_PER_POUR );
 
     const int stage_idx = get_plant_current_stage_idx_from_effective( here, examp );
     const std::string stage = stage_idx >= 0 ?

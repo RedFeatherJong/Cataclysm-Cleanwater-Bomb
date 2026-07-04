@@ -23,6 +23,7 @@
 #include "dialogue.h"
 #include "effect_on_condition.h"
 #include "enums.h"
+#include "event_bus.h"
 #include "flat_set.h"
 #include "game.h"
 #include "game_inventory.h"
@@ -1091,6 +1092,11 @@ void vehicle::operate_reaper( map &here )
             { "seed_count", static_cast<double>( seed_produced ) },
             { "actor_is_npc", 0.0 }
         };
+        get_event_bus().send<event_type::character_harvests_plant>(
+            get_avatar().getID(), here.get_abs( reaper_pos ).raw(),
+            seed_type.get_id(), here.furn( reaper_pos ).id(),
+            plant_produced, seed_produced );
+
         const furn_t &furn = here.furn( reaper_pos ).obj();
         if( furn.plant ) {
             iexamine::run_plant_eocs( furn.plant->eoc_on_harvest, get_avatar(), here, reaper_pos, *seed,
@@ -1161,6 +1167,11 @@ void vehicle::operate_planter( map &here )
                 if( planted_seed != nullptr ) {
                     const std::string seed_stage( "GROWTH_SEED" );
                     const furn_t &new_furn = here.furn( loc ).obj();
+
+                    get_event_bus().send<event_type::character_plants_seed>(
+                        get_avatar().getID(), here.get_abs( loc ).raw(),
+                        planted_seed->typeId(), new_furn.id );
+
                     const std::map<std::string, double> num_ctx = {
                         { "actor_is_npc", 0.0 }
                     };

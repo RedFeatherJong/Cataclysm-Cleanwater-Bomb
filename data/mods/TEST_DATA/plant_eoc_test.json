@@ -44,6 +44,53 @@
     ]
   },
   {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_EVENT_PLANT_SEED",
+    "eoc_type": "EVENT",
+    "required_event": "character_plants_seed",
+    "effect": [
+      { "math": [ "test_event_plant = 1" ] },
+      {
+        "copy_var": { "context_val": "seed_id" },
+        "target_var": { "global_val": "test_event_plant_seed_id" }
+      }
+    ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_EVENT_HARVEST_PLANT",
+    "eoc_type": "EVENT",
+    "required_event": "character_harvests_plant",
+    "effect": [
+      { "math": [ "test_event_harvest = context_val(plant_count)" ] },
+      {
+        "copy_var": { "context_val": "seed_id" },
+        "target_var": { "global_val": "test_event_harvest_seed_id" }
+      }
+    ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_EVENT_FERTILIZE_PLANT",
+    "eoc_type": "EVENT",
+    "required_event": "character_fertilizes_plant",
+    "effect": [
+      {
+        "copy_var": { "context_val": "fertilizer_id" },
+        "target_var": { "global_val": "test_event_fertilizer_id" }
+      }
+    ]
+  },
+  {
+    "type": "effect_on_condition",
+    "id": "EOC_TEST_EVENT_WATER_PLANT",
+    "eoc_type": "EVENT",
+    "required_event": "character_waters_plant",
+    "effect": [
+      { "math": [ "test_event_water_added = context_val(water_added)" ] }
+    ]
+  },
+  {
     "type": "furniture",
     "id": "test_f_plant_seed",
     "copy-from": "f_plant_seed",
