@@ -1,8 +1,8 @@
 
 # 大灾变：净化协议（Cataclysm: Cleanwater Bomb）
-《大灾变：净化协议（Cataclysm: Cleanwater Bomb）》是一款启示录背景与科学奇幻设定的roguelike单人回合制末日生存游戏。
+《大灾变：净化协议（Cataclysm: Cleanwater Bomb）》是一款后启示录背景与科学奇幻设定的roguelike单人回合制末日生存游戏。
 
-在这款游戏里，你将面对由程序生成的充满复生的丧尸、严酷且持续的生存压力与来自异界的可怖侵蚀的复杂环境，你需要在崩坏的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。
+在这款游戏里，你将面对由程序生成的，充满不断复活的丧尸、严酷持续的生存压力与来自异界的可怖侵蚀的复杂环境，你需要在崩坏的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。
 
 基于 [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA) `cdda/master` 分支 commit：**221c786e7d**
 
@@ -28,6 +28,9 @@
 
 ## 问答
 
+#### 兼容性？
+本分支不会主动破坏兼容性，事实上我们不仅在尝试修复Cataclysm-DDA留下的各类bug或兼容性等方面的问题，同时也仍然保持同步上游分支Cataclysm-DDA并不会与我们的开发理念或修改内容冲突的变更以维持项目的同步性。如果你是玩家，应当能够很容易地将支持Cataclysm-DDA最新实验版的第三方mod加入本分支项目的游戏中。如果你是mod作者，适配工作应当也很轻松。但需要注意，由于我们已经新增了不少额外功能和modding API支持，独属于本项目的mod工程可能是无法支持上游分支Cataclysm-DDA的游戏的！
+
 #### 你们是为了简化游戏/增加游戏性而开启这个项目的吗？
 
 不是。我们并不以调整难度作为核心目标，也不会为此而进行调整。本项目的宗旨是在不简化玩法的情况下，尽可能做到不为玩家体验添堵，建立更加符合现实、契合直觉、保留游戏性、对角色与怪物双向且公平的改动机制的改动体系，摒弃真实性必然和游戏性与角色性能冲突的片面观点，做到使开发者能站在玩家的角度思考。
@@ -47,7 +50,7 @@
 ----
 
 # Cataclysm: Cleanwater Bomb
-Cataclysm: Cleanwater Bomb is an apocalyptic, science-fantasy roguelike single-player turn-based survival game.
+Cataclysm: Cleanwater Bomb is an post-apocalyptic, science-fantasy roguelike single-player turn-based survival game.
 
 In this game, you will face a complex, procedurally generated environment filled with reanimated zombies, relentless and ongoing survival pressures, and terrifying incursions from other worlds. You must struggle to survive in a broken world, scavenging the ruins of a fallen civilization for food and gear. Looking ahead, we plan to introduce exciting new features, such as achieving industrialization and rebuilding your home from the ground up. *(We're recruiting contributors to help turn these plans into reality!)*
 
@@ -71,6 +74,10 @@ Join our:
  - Reddit: https://www.reddit.com/r/CataclysmCB/
 
 ## FAQ
+
+#### Compatibility?
+Our branch will not proactively break compatibility. In fact, we are not only attempting to fix various bugs and compatibility-related issues left behind by Cataclysm-DDA, but we are also continuously syncing changes from the upstream Cataclysm-DDA branch that do not conflict with our development philosophy or core modifications, thereby maintaining project synchronicity. If you are a player, you should find it very easy to add third-party mods meant for the latest experimental versions of Cataclysm-DDA into this branch's game. If you are a mod author, adaptation work should also be straightforward. Please note, however, that because we have already introduced a significant amount of additional features and modding API support, mod projects exclusive to this project may not be compatible with the upstream Cataclysm-DDA game!
+
 #### Q: Are you creating this project to simplify the game or boost its playability?
 A: No. Adjusting difficulty is not our core objective, and we will not make changes solely for that purpose. The mission of this project is to avoid unnecessary frustrations for players while preserving the full depth of the original gameplay. We aim to build a modification system that is realistic, intuitive, engaging, and fair to both player characters and monsters. We reject the false dichotomy that realism must conflict with gameplay or character performance, and strive to think from the player's perspective as developers.
 

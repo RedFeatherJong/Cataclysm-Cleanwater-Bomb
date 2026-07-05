@@ -28,6 +28,8 @@
 | #87000 | 2026-05-14 | De-charge ... charges (1) | 部分回退（仅 itemgroups spawn 点）|
 | #87177 | 2026-05-26 | Recipes for charged items must specify charges | 在库待回退（de-charge 关联）|
 | #87668 | 2026-06-18 | fix detergent use in washing | 未同步（detergent de-charge 连带修复，见下）|
+| #87891 | 2026-07-04 | CleverRaven/detergent (detergent itemgroup group spawn) | 未同步（detergent de-charge 关联） |
+| #87897 | 2026-07-05 | put bleach in bottles properly | 部分同步（仅 display/container，未取 group spawn 改） |
 
 de-charge 系列此前的回退工作多数已作废（分支回到 master），故标"在库待回退"。
 
@@ -52,3 +54,37 @@ de-charge 系列此前的回退工作多数已作废（分支回到 master），
 | #87717 | 2026-06-20 | fix: Crash in any ImGui window on alt + F4 | 上游随即被 #87720 revert，两者净零；同步无意义 |
 | #87720 | 2026-06-20 | Revert "fix: Crash in any ImGui window on alt + F4" | 撤销 #87717；与 #87717 成对跳过 |
 
+---
+
+## 同步记录 / Sync Log
+
+### sync-cdda-20260701 (2026-07-01)
+
+同步范围：从上次 sync-cdda-87733（2026-06-25）到 upstream/master HEAD（2026-06-30），共 44 commits / 25 PRs。
+
+**冲突处理**：
+
+| PR | 文件 | 处理方式 |
+|---|---|---|
+| #87719 (ash重量体积调整) | `chemicals_and_resources.json` | 保留 fork 的 stackable/BY_WEIGHT 模型，不采用上游的 count 模型重量/体积值 |
+| #87832 (酒精显示统一) | `carnivore.json` | 采用上游的描述文本和 display_type 改进 |
+
+**同步的 PR 编号**：#87570, #87682, #87719, #87726, #87735, #87752, #87761, #87770, #87779, #87794, #87795, #87796, #87797, #87799, #87800, #87805, #87806, #87808, #87809, #87810, #87811, #87814, #87815, #87823, #87825, #87827, #87829, #87831, #87832, #87834, #87836, #87838, #87841, #87842
+
+本次无新增排除项。
+
+
+### sync-cdda-20260705 (2026-07-05)
+
+同步范围：从上次 sync-cdda-20260701（#87842）到 upstream/master HEAD（2026-07-05），共 46 commits / 26 PRs。
+
+**冲突处理**：
+
+| PR | 文件 | 处理方式 |
+|---|---|---|
+| #87891 (detergent group spawn) | `collections_domestic.json` 等 4 文件 | 保留 fork 的 stackable/charges 模型，不取上游的 group 式 spawn |
+| #87897 (bleach 装瓶) | `SUS/domestic.json`, `collections_domestic.json`, `mil_base_z-1.json` 等 | 保留 fork 的 charges 计法；仅取 display/container 改进 |
+
+**同步的 PR 编号**：#87678, #87746, #87802, #87819, #87826, #87836, #87837, #87838, #87843, #87844, #87845, #87848, #87852, #87853, #87854, #87855, #87856, #87857, #87858, #87859, #87863, #87873, #87875, #87881, #87897, #87900
+
+**本次新增排除项**：#87891（detergent group spawn，与 fork stackable 模型冲突）

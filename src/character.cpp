@@ -565,9 +565,9 @@ Character::Character() :
     leak_level_dirty = true;
     volume = 0;
     set_value( "THIEF_MODE", "THIEF_ASK" );
-    for( const auto &v : vitamin::all() ) {
-        vitamin_levels[ v.first ] = 0;
-        daily_vitamins[v.first] = { 0,0 };
+    for( const vitamin &v : vitamin::all() ) {
+        vitamin_levels[v.id] = 0;
+        daily_vitamins[v.id] = { 0,0 };
     }
     // Only call these if game is initialized
     if( !!g && json_flag::is_ready() ) {
@@ -4387,9 +4387,9 @@ void Character::recalc_limb_energy_usage()
     }
     for( const bionic_id &bid : get_bionic_fueled_with_muscle() ) {
         if( has_active_bionic( bid ) ) {
-            bionic_powercost = bionic_powercost * 50;
+            bionic_powercost = bionic_powercost * 20;
         } else {
-            bionic_powercost = bionic_powercost * 5;
+            bionic_powercost = bionic_powercost * 2;
         }
     }
     arms_power_use = bionic_powercost;
@@ -4419,9 +4419,9 @@ void Character::recalc_limb_energy_usage()
     }
     for( const bionic_id &bid : get_bionic_fueled_with_muscle() ) {
         if( has_active_bionic( bid ) ) {
-            bionic_powercost = bionic_powercost * 50;
+            bionic_powercost = bionic_powercost * 20;
         } else {
-            bionic_powercost = bionic_powercost * 5;
+            bionic_powercost = bionic_powercost * 2;
         }
     }
     legs_power_use = bionic_powercost;

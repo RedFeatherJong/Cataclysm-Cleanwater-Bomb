@@ -182,7 +182,8 @@
     "longest_side": "150 cm",
     "price": "30 USD",
     "price_postapoc": "5 cent",
-    "material": [ "plastic" ]
+    "material": [ "plastic" ],
+    "flags": [ "COSPLAY_PROPS" ]
   },
   {
     "id": "shovel",
@@ -322,7 +323,7 @@
     "subtypes": [ "TOOL" ],
     "name": { "str": "bill axe" },
     "material": [ "wood", "mc_steel" ],
-    "description": "The steel curved blade of a bill placed stoutly ontop an axe handle.  It still isn't long enough to use as a spear, but it'll still cleave your enemies.",
+    "description": "The steel curved blade of a bill placed stoutly on top an axe handle.  It still isn't long enough to use as a spear, but it'll still cleave your enemies.",
     "looks_like": "ax",
     "weight": "2100 g",
     "volume": "1900 ml",

@@ -178,6 +178,7 @@ SPELL
 terrain
 uncraft
 vehicle_part
+vitamin
 ```
 `overmap_special` and `city_building` only partially support `copy-from`
 - Mutable specials will extend `check_for_locations_area` if `check_for_locations` is not specified 
@@ -190,7 +191,7 @@ To find out if a type supports `copy-from`, you need to know if it has implement
 * In the search results you find [gates.cpp](https://github.com/CleverRaven/Cataclysm-DDA/tree/master/src/gates.cpp). open it.
 * In gates.cpp, find the generic_factory line, it looks like this: `generic_factory<gate_data> gates_data( "gate type", "handle", "other_handles" );`.
 * Since the generic_factory line is present, you can now conclude that it supports `copy-from`.
-* If you don't find generic_factory present, it does not support copy-from, as is the case for type vitamin (repeat the above steps and find that [vitamin.cpp](https://github.com/CleverRaven/Cataclysm-DDA/tree/master/src/vitamin.cpp) does not contain generic_factory).
+* If you don't find generic_factory present, it does not support copy-from. The exact set of supported types in this repository may differ from upstream CleverRaven/Cataclysm-DDA; check the current source to be sure.
 
 
 ## Behavior
@@ -201,6 +202,7 @@ In summary, there is no "default" JSON inheritance, only shared degrees of suppo
 * `monstergroup` extends by default.  This prevents mods copying monstergroup definitions from replacing vanilla monstergroup lists.  To replace the *entire* list, add `"override": true` to the monstergroup object.
 * `SPELL` has limited support, given their behavior is governed by its spell `effect`.  Flags are not always inherited.  Testing is required to guarantee an inherited spell will behave as intended, use at your own risk.
 * The `vitamins` field from `material` extends by default.
+* `vitamin` supports `copy-from`, `extend`, and `delete`. `extend`/`delete` only apply to the container fields `flags`, `disease`, `disease_excess`, and `decays_into`; `relative` and `proportional` are not supported.
 
 
 ## Guidelines
