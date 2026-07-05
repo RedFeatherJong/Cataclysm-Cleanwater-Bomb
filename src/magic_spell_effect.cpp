@@ -31,14 +31,18 @@
 #include "dialogue_helpers.h"
 #include "effect_on_condition.h"
 #include "enums.h"
+#include "event.h"
+#include "event_bus.h"
 #include "explosion.h"
 #include "game_inventory.h"
+#include "iexamine.h"
 #include "field.h"
 #include "field_type.h"
 #include "fungal_effects.h"
 #include "game.h"
 #include "item.h"
 #include "item_group.h"
+#include "itype.h"
 #include "kill_tracker.h"
 #include "line.h"
 #include "magic.h"
@@ -1493,7 +1497,56 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
             return;
         }
 
-        seed->set_birthday( seed->birthday() - fertilizerEpoch );
+        // Synchronize before reading / mutating the authoritative effective growth time.
+        here.grow_plant( tile );
+
+        item *synced_seed = iexamine::get_seed_at( here, tile );
+        if( synced_seed == nullptr ) {
+            continue;
+        }
+
+        const furn_t &furn = here.furn( tile ).obj();
+        const float growth_multiplier = furn.plant ? furn.plant->growth_multiplier : 1.0f;
+        const time_duration current_effective = iexamine::get_plant_effective_growth_time(
+                    *synced_seed, growth_multiplier );
+        const time_duration new_effective = current_effective + fertilizerEpoch;
+
+        iexamine::set_plant_effective_growth_turns( *synced_seed,
+                to_turns<int>( new_effective ) );
+        synced_seed->set_birthday( calendar::turn - new_effective / growth_multiplier );
+
+        // Apply any stage advances immediately.
+        here.grow_plant( tile );
+
+        // Re-fetch the seed in case grow_plant / EOCs moved or removed it.
+        synced_seed = iexamine::get_seed_at( here, tile );
+        if( synced_seed != nullptr ) {
+            Character *planter = caster.as_character();
+            if( planter != nullptr ) {
+                const furn_str_id furn_id = here.furn( tile ).id();
+                get_event_bus().send<event_type::character_fertilizes_plant>(
+                    planter->getID(), here.get_abs( tile ).raw(), synced_seed->typeId(), furn_id,
+                    itype_fertilizer, to_turns<int>( fertilizerEpoch ) );
+
+                const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( here, tile );
+                const std::string stage = stage_idx >= 0 ?
+                                          synced_seed->type->seed->get_growth_stages()[stage_idx].first.str() : "";
+                const std::map<std::string, std::string> string_ctx = {
+                    { "fertilizer_id", itype_fertilizer.str() }
+                };
+                const std::map<std::string, double> num_ctx = {
+                    { "reduction_turns", static_cast<double>( to_turns<int>( fertilizerEpoch ) ) },
+                    { "actor_is_npc", planter->is_npc() ? 1.0 : 0.0 }
+                };
+                if( furn.plant ) {
+                    iexamine::run_plant_eocs( furn.plant->eoc_on_fertilize, *planter, here, tile,
+                                               *synced_seed, stage, stage, string_ctx, num_ctx );
+                }
+                iexamine::run_plant_eocs( synced_seed->type->seed->eoc_on_fertilize, *planter, here,
+                                           tile, *synced_seed, stage, stage, string_ctx, num_ctx );
+            }
+        }
+
         // The plant furniture has the NOITEM token which prevents adding items on that square,
         // spawned items are moved to an adjacent field instead, but the fertilizer token
         // must be on the square of the plant, therefore this hack:

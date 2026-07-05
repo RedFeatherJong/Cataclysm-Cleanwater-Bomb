@@ -10255,7 +10255,26 @@ void map::grow_plant( const tripoint_bub_ms &p )
         // Non-irrigated plants grow strictly with real time.  Keep the
         // authoritative effective-growth-time variable in sync so helpers that
         // rely on it agree with the stage computed here.
-        effective_growth_time = seed->age() * initial_furn.plant->growth_multiplier;
+        const time_point last_check = iexamine::get_plant_last_water_check( *seed );
+        const time_duration elapsed = last_check == time_point::from_turn( 0 )
+                                      ? seed->age() : calendar::turn - last_check;
+        if( seed->has_var( "seed_effective_growth_turns" ) ) {
+            effective_growth_time = time_duration::from_turns(
+                                        iexamine::get_plant_effective_growth_turns( *seed ) );
+            effective_growth_time += elapsed * initial_furn.plant->growth_multiplier;
+        } else {
+            // Old saves: estimate from age, but clamp to the current furniture
+            // stage threshold so we never regress a plant that already visually
+            // advanced before this variable existed.
+            effective_growth_time = seed->age() * initial_furn.plant->growth_multiplier;
+            const int current_stage_idx = iexamine::get_plant_current_stage_idx( *this, p, growth_stages );
+            const time_duration min_effective_for_stage =
+                iexamine::get_plant_stage_threshold( growth_stages, current_stage_idx );
+            if( effective_growth_time < min_effective_for_stage ) {
+                effective_growth_time = min_effective_for_stage;
+            }
+        }
+        iexamine::set_plant_last_water_check( *seed, calendar::turn );
         iexamine::set_plant_effective_growth_turns( *seed, to_turns<int>( effective_growth_time ) );
     }
 

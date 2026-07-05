@@ -21,9 +21,14 @@
   },
   {
     "type": "effect_on_condition",
+    "id": "EOC_TEST_PLANT_OVERGROW",
+    "effect": [ { "math": [ "test_overgrow = 1" ] } ]
+  },
+  {
+    "type": "effect_on_condition",
     "id": "EOC_TEST_PLANT_HARVEST",
     "effect": [
-      { "math": [ "test_harvest_count = context_val(plant_count)" ] }
+      { "math": [ "test_harvest_count = _plant_count" ] }
     ]
   },
   {
@@ -33,14 +38,15 @@
       {
         "copy_var": { "context_val": "fertilizer_id" },
         "target_var": { "global_val": "test_fertilizer" }
-      }
+      },
+      { "math": [ "test_fertilize_reduction_turns = _reduction_turns" ] }
     ]
   },
   {
     "type": "effect_on_condition",
     "id": "EOC_TEST_PLANT_WATER",
     "effect": [
-      { "math": [ "test_water_added = context_val(water_added)" ] }
+      { "math": [ "test_water_added = _water_added" ] }
     ]
   },
   {
@@ -62,7 +68,7 @@
     "eoc_type": "EVENT",
     "required_event": "character_harvests_plant",
     "effect": [
-      { "math": [ "test_event_harvest = context_val(plant_count)" ] },
+      { "math": [ "test_event_harvest = _plant_count" ] },
       {
         "copy_var": { "context_val": "seed_id" },
         "target_var": { "global_val": "test_event_harvest_seed_id" }
@@ -87,7 +93,7 @@
     "eoc_type": "EVENT",
     "required_event": "character_waters_plant",
     "effect": [
-      { "math": [ "test_event_water_added = context_val(water_added)" ] }
+      { "math": [ "test_event_water_added = _water_added" ] }
     ]
   },
   {
@@ -130,9 +136,20 @@
     "copy-from": "f_plant_harvest",
     "name": "test plant harvest",
     "plant_data": {
-      "transform": "f_null",
+      "transform": "test_f_plant_overgrown",
       "base": "f_null",
       "eoc_on_harvest": [ "EOC_TEST_PLANT_HARVEST" ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "test_f_plant_overgrown",
+    "copy-from": "f_plant_unharvested_overgrown",
+    "name": "test plant overgrown",
+    "plant_data": {
+      "transform": "test_f_plant_overgrown",
+      "base": "f_null",
+      "eoc_on_overgrow": [ "EOC_TEST_PLANT_OVERGROW" ]
     }
   },
   {
@@ -145,16 +162,34 @@
     "plant_name": "test EOC plant",
     "fruit": "raw_edamame",
     "growth_stages": [
-      { "GROWTH_SEED": "1 second" },
-      { "GROWTH_SEEDLING": "1 second" },
-      { "GROWTH_MATURE": "1 second" },
-      { "GROWTH_HARVEST": "1 second" }
+      { "GROWTH_SEED": "1 hour" },
+      { "GROWTH_SEEDLING": "1 hour" },
+      { "GROWTH_MATURE": "1 hour" },
+      { "GROWTH_HARVEST": "1 hour" },
+      { "GROWTH_OVERGROWN": "1 hour" }
     ],
     "eoc_on_plant": [ "EOC_TEST_PLANT_PLANTED" ],
     "eoc_on_grow": [ "EOC_TEST_PLANT_GROW" ],
     "eoc_on_mature": [ "EOC_TEST_PLANT_MATURE" ],
+    "eoc_on_overgrow": [ "EOC_TEST_PLANT_OVERGROW" ],
     "eoc_on_harvest": [ "EOC_TEST_PLANT_HARVEST" ],
     "eoc_on_fertilize": [ "EOC_TEST_PLANT_FERTILIZE" ],
     "eoc_on_water": [ "EOC_TEST_PLANT_WATER" ]
+  },
+  {
+    "type": "ITEM",
+    "subtypes": [ "SEED", "COMESTIBLE" ],
+    "id": "test_seed_simple",
+    "copy-from": "soybean_seed",
+    "name": { "str_sp": "test simple seeds" },
+    "description": "A fast-growing test seed without EOC hooks, used for pure growth logic tests.",
+    "plant_name": "test simple plant",
+    "fruit": "raw_edamame",
+    "growth_stages": [
+      { "GROWTH_SEED": "1 second" },
+      { "GROWTH_SEEDLING": "1 second" },
+      { "GROWTH_MATURE": "1 second" },
+      { "GROWTH_HARVEST": "1 second" }
+    ]
   }
 ]
