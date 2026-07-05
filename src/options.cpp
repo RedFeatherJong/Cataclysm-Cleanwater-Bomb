@@ -2988,6 +2988,26 @@ void options_manager::add_options_performance()
                          "higher values mainly cost background I/O, not main-thread time." ),
          0, 6, 2
        );
+
+    add( "MULTITHREADING_ENABLED", "performance",
+         to_translation( "Enable multithreading" ),
+         to_translation( "Enable the persistent worker thread pool for parallelizing "
+                         "game-logic work (cache rebuilds, monster AI, etc.).  "
+                         "Experimental: most subsystems are not yet wired to the pool, so "
+                         "the effect is limited until more call sites adopt it.  "
+                         "Requires a restart after changing." ),
+         false
+       );
+
+    add( "THREAD_POOL_WORKERS", "performance",
+         to_translation( "Thread pool workers" ),
+         to_translation( "Number of worker threads in the pool when multithreading is enabled.  "
+                         "0 = auto (hardware_concurrency - 1, leaving one core for the main / "
+                         "SDL thread).  Lower this if the game stutters from worker contention "
+                         "or you want to reserve cores for other programs.  Requires a restart "
+                         "after changing." ),
+         0, 64, 0
+       );
 }
 
 void options_manager::add_options_world_default()

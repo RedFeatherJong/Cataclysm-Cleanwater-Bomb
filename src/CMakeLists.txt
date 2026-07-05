@@ -1,5 +1,21 @@
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
+# Tracy profiler interface.  When TRACY=ON (root CMakeLists.txt), this carries
+# the tracy include path and libTracyClient link to every -common object lib.
+# When TRACY=OFF the target is not created and these lines are inert.
+if (TRACY)
+    add_library(cata_tracy INTERFACE)
+    # SYSTEM: tracy is a third-party header library that uses C-style casts
+    # internally; marking it SYSTEM suppresses -Wold-style-cast and similar
+    # warnings from its headers (they are not actionable in our codebase).
+    target_include_directories(cata_tracy SYSTEM INTERFACE ${TRACY_INCLUDE_DIR})
+    target_link_libraries(cata_tracy INTERFACE ${TRACY_LIBRARY})
+    # Tracy's on-demand capture uses dlopen on POSIX.
+    if (UNIX AND NOT APPLE)
+        target_link_libraries(cata_tracy INTERFACE ${CMAKE_DL_LIBS})
+    endif()
+endif()
+
 set(MAIN_CPP ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 set(MESSAGES_CPP ${CMAKE_CURRENT_SOURCE_DIR}/messages.cpp)
 set(RESOURCE_RC ${CMAKE_CURRENT_SOURCE_DIR}/resource.rc)
@@ -56,6 +72,10 @@ if (TILES)
     target_include_directories(cataclysm-tiles-common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
     target_link_libraries(cataclysm-tiles-common PUBLIC third-party)
+
+    if (TARGET cata_tracy)
+        target_link_libraries(cataclysm-tiles-common PUBLIC cata_tracy)
+    endif()
 
     if (WIN32)
         add_definitions(-DUSE_WINMAIN)
@@ -273,6 +293,10 @@ if (CURSES)
     target_include_directories(cataclysm-common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(cataclysm-common PUBLIC third-party)
 
+    if (TARGET cata_tracy)
+        target_link_libraries(cataclysm-common PUBLIC cata_tracy)
+    endif()
+
     if (WIN32)
         add_executable(cataclysm
                 ${MAIN_CPP}
@@ -358,6 +382,10 @@ if (HEADLESS)
     target_include_directories(cataclysm-common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(cataclysm-common PUBLIC third-party)
     target_compile_definitions(cataclysm-common PUBLIC HEADLESS)
+
+    if (TARGET cata_tracy)
+        target_link_libraries(cataclysm-common PUBLIC cata_tracy)
+    endif()
 
     add_executable(cataclysm
             ${MAIN_CPP}
