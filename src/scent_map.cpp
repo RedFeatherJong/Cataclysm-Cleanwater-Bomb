@@ -13,6 +13,7 @@
 #include "map.h"
 #include "output.h"
 #include "point.h"
+#include "profiling.h"
 
 static constexpr int SCENT_RADIUS = 40;
 
@@ -168,6 +169,7 @@ bool scent_map::inbounds( const point_bub_ms &p ) const
 
 void scent_map::update( const tripoint_bub_ms &center, map &m )
 {
+    ZoneScoped;
     // Stop updating scent after X turns of the player not moving.
     // Once wind is added, need to reset this on wind shifts as well.
     if( !player_last_position || center != *player_last_position ) {

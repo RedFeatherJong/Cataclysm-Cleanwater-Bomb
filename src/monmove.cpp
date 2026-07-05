@@ -43,6 +43,7 @@
 #include "pathfinding.h"
 #include "pimpl.h"
 #include "point.h"
+#include "profiling.h"
 #include "rng.h"
 #include "scent_map.h"
 #include "sounds.h"
@@ -519,6 +520,7 @@ bool monster::mating_angry() const
 
 void monster::plan()
 {
+    ZoneScoped;
     monster_plan mon_plan( *this );
 
     map &here = get_map();
