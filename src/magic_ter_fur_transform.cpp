@@ -55,6 +55,9 @@ static void sync_plant_seed_after_furniture_transform( map &m, const tripoint_bu
     }
 
     const float growth_multiplier = new_furn.plant->growth_multiplier;
+    if( growth_multiplier <= 0.0f ) {
+        return;
+    }
     const time_duration threshold = iexamine::get_plant_stage_threshold( growth_stages,
                                     new_stage_idx );
     const time_duration current_effective = iexamine::get_plant_effective_growth_time( *seed,
