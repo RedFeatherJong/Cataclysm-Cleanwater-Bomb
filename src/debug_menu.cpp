@@ -2039,9 +2039,9 @@ static void character_edit_needs_menu( Character &you )
     const auto &vits = vitamin::all();
     int vitamin_entry_base = 11;
     int vitamin_idx = 0;
-    for( const auto &v : vits ) {
+    for( const vitamin &v : vits ) {
         smenu.addentry( vitamin_entry_base + vitamin_idx, true, 0, _( "%s: daily %d, overall %d" ),
-                        v.second.name(), you.get_daily_vitamin( v.first ), you.vitamin_get( v.first ) );
+                        v.name(), you.get_daily_vitamin( v.id ), you.vitamin_get( v.id ) );
         ++vitamin_idx;
     }
     smenu.query();
@@ -2124,11 +2124,11 @@ static void character_edit_needs_menu( Character &you )
         default:
             if( smenu.ret >= vitamin_entry_base &&
                 smenu.ret < vitamin_entry_base + static_cast<int>( vits.size() ) ) {
-                auto iter = std::next( vits.begin(), smenu.ret - vitamin_entry_base );
-                value = you.vitamin_get( iter->first );
+                const vitamin &vit = *std::next( vits.begin(), smenu.ret - vitamin_entry_base );
+                value = you.vitamin_get( vit.id );
                 if( query_int( value, true, _( "Set %s to?" ),
-                               iter->second.name() ) ) {
-                    you.vitamin_set( iter->first, value );
+                               vit.name() ) ) {
+                    you.vitamin_set( vit.id, value );
                 }
             }
     }
@@ -2869,9 +2869,9 @@ static void faction_edit_larder_menu( faction *fac )
         uilist smenu;
         smenu.addentry( 0, true, 'l', _( "kcal: have stored %i" ), entry.kcal() );
         const auto &vits = vitamin::all();
-        for( const auto &v : vits ) {
-            smenu.addentry( -1, true, 0, _( "%s: have stored %d" ), v.second.name(),
-                            entry.get_vitamin( v.first ) );
+        for( const vitamin &v : vits ) {
+            smenu.addentry( -1, true, 0, _( "%s: have stored %d" ), v.name(),
+                            entry.get_vitamin( v.id ) );
         }
 
         smenu.query();
@@ -2885,10 +2885,10 @@ static void faction_edit_larder_menu( faction *fac )
                 break;
             default:
                 if( smenu.ret >= 1 && smenu.ret < static_cast<int>( vits.size() + 1 ) ) {
-                    auto iter = std::next( vits.begin(), smenu.ret - 1 );
-                    value = entry.get_vitamin( iter->first );
-                    if( query_int( value, true, _( "Set %s to?" ), iter->second.name() ) ) {
-                        entry.set_vitamin( iter->first, value );
+                    const vitamin &vit = *std::next( vits.begin(), smenu.ret - 1 );
+                    value = entry.get_vitamin( vit.id );
+                    if( query_int( value, true, _( "Set %s to?" ), vit.name() ) ) {
+                        entry.set_vitamin( vit.id, value );
                     }
                 }
         }
