@@ -28,6 +28,7 @@
 #include "cata_variant.h"
 #include "clzones.h"
 #include "coordinates.h"
+#include "creature_tracker.h"
 #include "debug.h"
 #include "debug_capture.h"
 #include "enums.h"
@@ -63,6 +64,7 @@
 #include "player_activity.h"
 #include "point.h"
 #include "popup.h"
+#include "profiling.h"
 #include "rng.h"
 #include "scent_map.h"
 #include "sdlsound.h"
@@ -281,6 +283,7 @@ namespace
 {
 void monmove()
 {
+    ZoneScoped;
     g->cleanup_dead();
     map &m = get_map();
     avatar &u = get_avatar();
@@ -526,6 +529,7 @@ void game::handle_progress_ui()
 
 bool game::do_turn()
 {
+    ZoneScoped;
     // If a replay's input log has drained, save and request quit before doing
     // any more simulation. Checked at the top of every turn so it fires no matter
     // which input path drained the log (avatar action loop, a modal menu, a
@@ -554,6 +558,7 @@ bool game::do_turn()
 
 void game::simulate_turn_prefix()
 {
+    ZoneScoped;
     weather_manager &weather = get_weather();
 
     // Increment game turn
@@ -659,6 +664,7 @@ void game::simulate_turn_prefix()
 
 bool game::do_avatar_action_loop()
 {
+    ZoneScoped;
     avatar &u = get_avatar();
     map &m = get_map();
 
@@ -746,6 +752,7 @@ bool game::do_avatar_action_loop()
 
 void game::simulate_turn_suffix()
 {
+    ZoneScoped;
     avatar &u = get_avatar();
     map &m = get_map();
 
@@ -782,6 +789,10 @@ void game::simulate_turn_suffix()
     // Update vision caches for monsters. If this turns out to be expensive,
     // consider a stripped down cache just for monsters.
     m.build_map_cache( levz, true );
+
+    // Eagerly compute reachability zones for all creatures in parallel so
+    // that individual monster::plan() / find_reachable() calls hit the cache.
+    get_creature_tracker().precompute_all_zones();
 
     // process monster and npc turn
     monmove();
@@ -849,6 +860,7 @@ void game::simulate_turn_suffix()
 
 void game::present_turn()
 {
+    ZoneScoped;
     avatar &u = get_avatar();
 
     if( u.get_moves() < 0 && get_option<bool>( "FORCE_REDRAW" ) ) {
@@ -873,6 +885,7 @@ void game::present_turn()
 #endif
 
     debug_menu::debug_capture::tick_if_active();
+    FrameMark;
 }
 
 void game::render_mid_step( avatar &u, map &m, tripoint_bub_ms &last_memorized_pos )
