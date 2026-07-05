@@ -97,6 +97,17 @@
     ]
   },
   {
+    "type": "ter_furn_transform",
+    "id": "ter_test_plant_seedling_to_mature",
+    "furniture": [
+      {
+        "result": "test_f_plant_mature",
+        "valid_furniture": [ "test_f_plant_seedling" ],
+        "message": "The test plant matures instantly."
+      }
+    ]
+  },
+  {
     "type": "furniture",
     "id": "test_f_plant_seed",
     "copy-from": "f_plant_seed",

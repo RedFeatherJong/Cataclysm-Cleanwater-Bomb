@@ -15,6 +15,7 @@
 #include "iexamine.h"
 #include "item.h"
 #include "itype.h"
+#include "magic_ter_furn_transform.h"
 #include "map.h"
 #include "map_helpers.h"
 #include "player_helpers.h"
@@ -42,6 +43,7 @@ static const itype_id itype_test_seed_simple( "test_seed_simple" );
 static const itype_id itype_water_clean( "water_clean" );
 
 static const ter_str_id ter_t_dirtmound( "t_dirtmound" );
+static const ter_furn_transform_id ter_test_plant_seedling_to_mature( "ter_test_plant_seedling_to_mature" );
 static const vproto_id vehicle_prototype_oldtractor( "oldtractor" );
 
 namespace
@@ -495,4 +497,43 @@ TEST_CASE( "plant_vehicle_operations", "[plant][vehicle]" )
 
         CHECK( get_globals().get_global_value( "test_planted" ).to_string() == "1" );
     }
+}
+
+TEST_CASE( "ter_transform_syncs_plant_seed_effective_growth_time", "[plant][magic][ter_transform]" )
+{
+    map &here = get_map();
+    avatar &u = get_avatar();
+    clear_avatar();
+    clear_map_without_vision();
+
+    const tripoint_bub_ms plot = u.pos_bub() + tripoint::east;
+
+    // Set up a seedling whose internal timer has not advanced at all.
+    item seed( itype_test_seed_simple );
+    seed.set_birthday( calendar::turn );
+    here.add_item( plot, seed );
+    here.furn_set( plot, furn_f_test_plant_seedling );
+
+    REQUIRE( here.furn( plot ) == furn_f_test_plant_seedling );
+
+    // Use a ter_furn_transform to jump the furniture straight to mature.
+    REQUIRE( ter_test_plant_seedling_to_mature.is_valid() );
+    ter_test_plant_seedling_to_mature->transform( here, plot );
+
+    CHECK( here.furn( plot ) == furn_f_test_plant_mature );
+
+    // The seed's effective growth time must now match the mature stage,
+    // otherwise later grow_plant calls would see a mismatch and stall.
+    item *synced_seed = iexamine::get_seed_at( here, plot );
+    REQUIRE( synced_seed != nullptr );
+    CHECK( iexamine::get_plant_current_stage_idx_from_effective( here, plot ) >=
+           iexamine::get_plant_mature_stage_idx( synced_seed->type->seed->get_growth_stages() ) );
+
+    // After the forced jump the plant should still be able to reach harvest
+    // through normal growth processing.
+    calendar::turn += 2_seconds;
+    here.grow_plant( plot );
+
+    CHECK( here.furn( plot ) == furn_f_test_plant_harvest );
+    CHECK( iexamine::is_plant_harvestable( here, plot ) );
 }

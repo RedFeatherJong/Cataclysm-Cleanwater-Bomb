@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include "activity_actor_definitions.h"
 #include "avatar.h"
 #include "bodypart.h"
 #include "calendar.h"
@@ -1472,14 +1471,12 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
         return;
     }
     for( const tripoint_bub_ms &tile : area ) {
-        // Use the same fertilization validity check as normal farming activities.
-        if( !multi_farm_activity_actor::can_fertilize( *planter, tile ).success() ) {
+        // Spell fertilization is a separate, repeatable growth-acceleration effect.
+        // It only requires a plant with a seed; it does not share the normal
+        // fertilization limits (maturity, already-fertilized, etc.).
+        if( !here.has_flag_furn( ter_furn_flag::TFLAG_PLANT, tile ) ) {
             continue;
         }
-        // Reduce the amount of time it takes until the next stage of the plant by
-        // the spell's damage (1% per damage point) relative to season length
-        const time_duration fertilizerEpoch = calendar::season_length() * ( static_cast<float>( sp.damage(
-                caster ) ) / 100.0f );
 
         // Synchronize before reading / mutating the authoritative effective growth time.
         here.grow_plant( tile );
@@ -1489,6 +1486,11 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
             continue;
         }
 
+        // Reduce the amount of time until maturity by the spell's damage
+        // (1% per damage point) relative to season length.
+        const time_duration fertilizerEpoch = calendar::season_length() * ( static_cast<float>( sp.damage(
+                caster ) ) / 100.0f );
+
         const furn_t &furn = here.furn( tile ).obj();
         const float growth_multiplier = furn.plant ? furn.plant->growth_multiplier : 1.0f;
         const time_duration current_effective = iexamine::get_plant_effective_growth_time(
@@ -1497,7 +1499,6 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
 
         iexamine::set_plant_effective_growth_turns( *synced_seed,
                 to_turns<int>( new_effective ) );
-        iexamine::set_plant_fertilized( *synced_seed, true );
         synced_seed->set_birthday( calendar::turn - new_effective / growth_multiplier );
 
         // Apply any stage advances immediately.
@@ -1529,13 +1530,6 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
                                        tile, *synced_seed, stage, stage, string_ctx, num_ctx );
         }
 
-        // The plant furniture has the NOITEM token which prevents adding items on that square,
-        // spawned items are moved to an adjacent field instead, but the fertilizer token
-        // must be on the square of the plant, therefore this hack:
-        const furn_id &old_furn = here.furn( tile );
-        here.furn_set( tile, furn_str_id::NULL_ID() );
-        here.spawn_item( tile, itype_fertilizer, 1, 1, calendar::turn );
-        here.furn_set( tile, old_furn );
     }
 }
 
