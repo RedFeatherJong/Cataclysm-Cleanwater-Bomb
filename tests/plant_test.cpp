@@ -44,6 +44,7 @@ static const itype_id itype_water_clean( "water_clean" );
 
 static const ter_str_id ter_t_dirtmound( "t_dirtmound" );
 static const ter_furn_transform_id ter_test_plant_seedling_to_mature( "ter_test_plant_seedling_to_mature" );
+static const ter_furn_transform_id ter_test_plant_seed_to_harvest( "ter_test_plant_seed_to_harvest" );
 static const vproto_id vehicle_prototype_oldtractor( "oldtractor" );
 
 namespace
@@ -536,4 +537,22 @@ TEST_CASE( "ter_transform_syncs_plant_seed_effective_growth_time", "[plant][magi
 
     CHECK( here.furn( plot ) == furn_f_test_plant_harvest );
     CHECK( iexamine::is_plant_harvestable( here, plot ) );
+
+    SECTION( "jump from seed straight to harvest" ) {
+        here.i_clear( plot );
+        here.furn_set( plot, furn_f_test_plant_seed );
+        item seed2( itype_test_seed_simple );
+        seed2.set_birthday( calendar::turn );
+        iexamine::set_plant_effective_growth_turns( seed2, 0 );
+        here.add_item( plot, seed2 );
+
+        REQUIRE( ter_test_plant_seed_to_harvest.is_valid() );
+        ter_test_plant_seed_to_harvest->transform( here, plot );
+
+        CHECK( here.furn( plot ) == furn_f_test_plant_harvest );
+
+        item *synced_seed2 = iexamine::get_seed_at( here, plot );
+        REQUIRE( synced_seed2 != nullptr );
+        CHECK( iexamine::is_plant_harvestable( here, plot ) );
+    }
 }

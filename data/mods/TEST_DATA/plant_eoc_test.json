@@ -108,6 +108,17 @@
     ]
   },
   {
+    "type": "ter_furn_transform",
+    "id": "ter_test_plant_seed_to_harvest",
+    "furniture": [
+      {
+        "result": "test_f_plant_harvest",
+        "valid_furniture": [ "test_f_plant_seed" ],
+        "message": "The test plant ripens instantly."
+      }
+    ]
+  },
+  {
     "type": "furniture",
     "id": "test_f_plant_seed",
     "copy-from": "f_plant_seed",
