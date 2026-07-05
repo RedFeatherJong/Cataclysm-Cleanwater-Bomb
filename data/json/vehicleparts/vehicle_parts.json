@@ -2012,7 +2012,7 @@
       },
       "repair": { "skills": [ [ "mechanics", 5 ] ], "time": "10 m", "using": [ [ "repair_welding_standard", 6 ] ] }
     },
-    "flags": [ "ARMOR" ],
+    "flags": [ "ARMOR", "SHOCK_RESISTANT" ],
     "breaks_into": [
       { "item": "ch_steel_lump", "count": [ 4, 6 ] },
       { "item": "ch_steel_chunk", "count": [ 4, 6 ] },
