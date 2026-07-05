@@ -39,6 +39,7 @@
 #include "overmapbuffer.h"
 #include "pocket_type.h"
 #include "point.h"
+#include "profiling.h"
 #include "regional_settings.h"
 #include "ret_val.h"
 #include "rng.h"
@@ -1034,6 +1035,7 @@ void weather_manager::on_game_start()
 
 void weather_manager::update_weather()
 {
+    ZoneScoped;
     Character &player_character = get_player_character();
     weather_changed = false;
     if( weather_id == WEATHER_NULL || calendar::turn >= nextweather ) {

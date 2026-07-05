@@ -86,6 +86,7 @@
 #include "pathfinding.h"
 #include "pocket_type.h"
 #include "power_network.h"
+#include "profiling.h"
 #include "projectile.h"
 #include "ranged.h"
 #include "relic.h"
@@ -616,6 +617,7 @@ void memorize_vpart_at( map &here, avatar &you, const tripoint_bub_ms &p,
 
 void map::update_map_memory( avatar &you )
 {
+    ZoneScoped;
     map &here = *this;
     const visibility_variables &cache = here.get_visibility_variables_cache();
     const tripoint_bub_ms you_pos = you.pos_bub( here );
@@ -1123,6 +1125,7 @@ void map::resolve_appliance_grid_power()
 
 void map::vehmove()
 {
+    ZoneScoped;
     // give vehicles movement points
     VehicleList vehicle_list;
     int minz = zlevels ? -OVERMAP_DEPTH : abs_sub.z();
@@ -4072,6 +4075,7 @@ void map::support_dirty( const tripoint_bub_ms &p )
 
 void map::process_falling()
 {
+    ZoneScoped;
     if( !zlevels ) {
         support_cache_dirty.clear();
         return;
@@ -7178,6 +7182,7 @@ static void process_vehicle_items( vehicle &cur_veh, int part )
 
 void map::process_items()
 {
+    ZoneScoped;
     const int minz = zlevels ? -OVERMAP_DEPTH : abs_sub.z();
     const int maxz = zlevels ? OVERMAP_HEIGHT : abs_sub.z();
     for( int gz = minz; gz <= maxz; ++gz ) {
@@ -8350,6 +8355,7 @@ void map::update_submaps_with_active_items()
 
 void map::update_visibility_cache( const int zlev )
 {
+    ZoneScoped;
     Character &player_character = get_player_character();
     const tripoint_bub_ms pos = player_character.pos_bub( *this );
 
@@ -11354,6 +11360,7 @@ bool map::build_floor_cache( const int zlev )
 
 void map::build_floor_caches()
 {
+    ZoneScoped;
     const int minz = zlevels ? -OVERMAP_DEPTH : abs_sub.z();
     const int maxz = zlevels ? OVERMAP_HEIGHT : abs_sub.z();
     for( int z = minz; z <= maxz; z++ ) {
@@ -11429,6 +11436,7 @@ void map::do_vehicle_caching( int z )
 
 void map::build_map_cache( const int zlev, bool skip_lightmap )
 {
+    ZoneScoped;
     const int minz = zlevels ? -OVERMAP_DEPTH : zlev;
     const int maxz = zlevels ? OVERMAP_HEIGHT : zlev;
     bool seen_cache_dirty = false;

@@ -22,6 +22,7 @@
 #include "point.h"
 #include "string_formatter.h"
 #include "submap.h"  // IWYU pragma: keep
+#include "thread_pool.h"
 #include "type_id.h"
 
 class Character;
@@ -341,6 +342,23 @@ T *creature_tracker::creature_at( const tripoint_abs_ms &p, bool allow_hallucina
     return nullptr;
 }
 
+void creature_tracker::rebuild_passability_bitmap()
+{
+    map &here = get_map();
+    for( int z = -OVERMAP_DEPTH; z <= OVERMAP_HEIGHT; z++ ) {
+        const level_cache &cache = here.get_cache_ref( z );
+        const auto &transparent_wo_fields = cache.transparent_cache_wo_fields;
+        std::array<std::bitset<MAPSIZE_Y>, MAPSIZE_X> &layer =
+            passability_bitmap_[z + OVERMAP_DEPTH];
+        for( int x = 0; x < MAPSIZE_X; x++ ) {
+            for( int y = 0; y < MAPSIZE_Y; y++ ) {
+                tripoint_bub_ms loc( x, y, z );
+                layer[x][y] = transparent_wo_fields[x][y] || here.passable( loc );
+            }
+        }
+    }
+}
+
 /** This is lazily evaluated on demand. Each creature in a zone is visited
  * as it flood fills, then the zone number is incremented. At the end all creatures in
  * the same zone will have the same zone number assigned, which can be used to have creatures in
@@ -352,6 +370,7 @@ void creature_tracker::flood_fill_zone( const Creature &origin )
         creatures_by_zone_and_faction_.clear();
         zone_tick_ = zone_tick_ > 0 ? -1 : 1;
         zone_number_ = 1;
+        rebuild_passability_bitmap();
         dirty_ = false;
     }
 
@@ -367,10 +386,12 @@ void creature_tracker::flood_fill_zone( const Creature &origin )
 
     map &here = get_map();
     ff::flood_fill_visit_10_connected( origin.pos_bub(),
-    [&here]( const tripoint_bub_ms & loc, int direction ) {
+    [this, &here]( const tripoint_bub_ms & loc, int direction ) {
         if( direction == 0 ) {
-            return here.inbounds( loc ) && ( here.is_transparent_wo_fields( loc ) ||
-                                             here.passable( loc ) );
+            return loc.z() >= -OVERMAP_DEPTH && loc.z() <= OVERMAP_HEIGHT &&
+                   loc.y() >= 0 && loc.y() < MAPSIZE_Y &&
+                   loc.x() >= 0 && loc.x() < MAPSIZE_X &&
+                   passability_bitmap_[loc.z() + OVERMAP_DEPTH][loc.x()][loc.y()];
         }
 
         auto check_location_passable_down = [loc, &here]( const maptile & mt, const ter_t & ter ) {
@@ -420,6 +441,143 @@ void creature_tracker::flood_fill_zone( const Creature &origin )
         zone_number_ = 1;
     } else {
         zone_number_++;
+    }
+}
+
+void creature_tracker::precompute_all_zones()
+{
+    if( dirty_ ) {
+        creatures_by_zone_and_faction_.clear();
+        zone_tick_ = zone_tick_ > 0 ? -1 : 1;
+        zone_number_ = 1;
+        rebuild_passability_bitmap();
+        dirty_ = false;
+    }
+
+    // Collect all creatures whose zone has not been computed this cycle.
+    std::vector<std::pair<Creature *, tripoint_bub_ms>> needs_zone;
+    for( const shared_ptr_fast<monster> &m : monsters_list ) {
+        if( m && !m->is_dead() ) {
+            if( !( m->get_reachable_zone() * zone_tick_ > 0 ) ) {
+                needs_zone.emplace_back( m.get(), m->pos_bub() );
+            }
+        }
+    }
+    for( const shared_ptr_fast<npc> &n : active_npc ) {
+        if( n && !n->is_dead() ) {
+            if( !( n->get_reachable_zone() * zone_tick_ > 0 ) ) {
+                needs_zone.emplace_back( n.get(), n->pos_bub() );
+            }
+        }
+    }
+
+    if( needs_zone.empty() ) {
+        return;
+    }
+
+    cata_thread_pool &pool = get_thread_pool();
+    if( pool.num_workers() == 0 ) {
+        // Sequential fallback: use the existing per-creature flood_fill_zone.
+        for( auto &entry : needs_zone ) {
+            flood_fill_zone( *entry.first );
+        }
+        return;
+    }
+
+    // Parallel path: each creature gets its own flood_fill on a worker thread.
+    // Workers share the read-only passability_bitmap_ and write to per-worker
+    // buffers.  After all complete, the main thread merges with first-write-wins
+    // semantics for zone assignment.
+    struct worker_result {
+        int assigned_zone = 0;
+        std::vector<std::pair<shared_ptr_fast<Creature>, int>> found;
+    };
+
+    std::vector<worker_result> results( needs_zone.size() );
+    for( size_t i = 0; i < needs_zone.size(); i++ ) {
+        results[i].assigned_zone = zone_number_ * zone_tick_;
+        if( zone_number_ == std::numeric_limits<int>::max() ) {
+            zone_number_ = 1;
+        } else {
+            zone_number_++;
+        }
+    }
+
+    simple_latch latch( needs_zone.size() );
+    for( size_t i = 0; i < needs_zone.size(); i++ ) {
+        tripoint_bub_ms pos = needs_zone[i].second;
+        int zn = results[i].assigned_zone;
+        worker_result *res = &results[i];
+        pool.submit( [this, pos, zn, res, &latch]() {
+            map &here = get_map();
+            ff::flood_fill_visit_10_connected( pos,
+            [this, &here]( const tripoint_bub_ms & loc, int direction ) {
+                if( direction == 0 ) {
+                    return loc.z() >= -OVERMAP_DEPTH && loc.z() <= OVERMAP_HEIGHT &&
+                           loc.y() >= 0 && loc.y() < MAPSIZE_Y &&
+                           loc.x() >= 0 && loc.x() < MAPSIZE_X &&
+                           passability_bitmap_[loc.z() + OVERMAP_DEPTH][loc.x()][loc.y()];
+                }
+
+                auto check_location_passable_down = [loc, &here]( const maptile & mt,
+                        const ter_t & ter ) {
+                    return ( ( ter.movecost != 0 && mt.get_furn_t().movecost >= 0 ) ||
+                             here.is_transparent_wo_fields( loc ) ) &&
+                           ( ter.has_flag( ter_furn_flag::TFLAG_NO_FLOOR ) ||
+                             ter.has_flag( ter_furn_flag::TFLAG_GOES_DOWN ) );
+                };
+
+                if( direction == 1 ) {
+                    const maptile &up = here.maptile_at( loc );
+                    const ter_t &up_ter = up.get_ter_t();
+                    if( up_ter.id.is_null() ) {
+                        return false;
+                    }
+                    if( check_location_passable_down( up, up_ter ) ) {
+                        return true;
+                    }
+                }
+                if( direction == -1 ) {
+                    const maptile &up = here.maptile_at( loc + tripoint::above );
+                    const ter_t &up_ter = up.get_ter_t();
+                    if( up_ter.id.is_null() ) {
+                        return false;
+                    }
+                    const maptile &down = here.maptile_at( loc );
+                    const ter_t &down_ter = up.get_ter_t();
+                    if( down_ter.id.is_null() ) {
+                        return false;
+                    }
+                    if( check_location_passable_down( down, down_ter ) ) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+            [this, zn, res]( const tripoint_bub_ms & loc ) {
+                if( Creature *creature = this->creature_at<Creature>( loc, true ) ) {
+                    if( shared_ptr_fast<Creature> ptr = g->shared_from( *creature ) ) {
+                        res->found.emplace_back( std::move( ptr ), zn );
+                    }
+                }
+            } );
+            latch.count_down();
+        } );
+    }
+    latch.wait();
+
+    // Merge: first-write-wins.  If two workers explored the same zone (because
+    // their origin creatures were connected), the first result processed
+    // claims all shared creatures; later results skip already-assigned ones.
+    for( worker_result &wr : results ) {
+        for( auto &[ptr, zn] : wr.found ) {
+            Creature *c = ptr.get();
+            if( c && !( c->get_reachable_zone() * zone_tick_ > 0 ) ) {
+                c->set_reachable_zone( zn );
+                creatures_by_zone_and_faction_[zn][c->get_monster_faction()].emplace_back(
+                    std::move( ptr ) );
+            }
+        }
     }
 }
 

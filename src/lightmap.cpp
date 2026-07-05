@@ -35,6 +35,7 @@
 #include "monster.h"
 #include "mtype.h"
 #include "npc.h"
+#include "profiling.h"
 #include "point.h"
 #include "string_formatter.h"
 #include "submap.h"
@@ -135,6 +136,7 @@ void map::add_light_from_items( const tripoint_bub_ms &p, const item_stack &item
 // TODO: Consider making this just clear the cache and dynamically fill it in as is_transparent() is called
 bool map::build_transparency_cache( const int zlev )
 {
+    ZoneScoped;
     level_cache &map_cache = get_cache( zlev );
     auto &transparent_cache_wo_fields = map_cache.transparent_cache_wo_fields;
     auto &transparency_cache = map_cache.transparency_cache;
@@ -241,6 +243,7 @@ bool map::build_transparency_cache( const int zlev )
 
 bool map::build_vision_transparency_cache( int zlev )
 {
+    ZoneScoped;
     level_cache &map_cache = get_cache( zlev );
 
     // We copy the transparency_cache so we need to recalc if it's dirty
@@ -481,6 +484,7 @@ void map::build_sunlight_cache( int pzlev )
 
 void map::generate_lightmap( const int zlev )
 {
+    ZoneScoped;
     level_cache &map_cache = get_cache( zlev );
     if( !map_cache.lightmap_dirty ) {
         return;
@@ -1570,6 +1574,7 @@ void map::apply_directional_light( const tripoint_bub_ms &p, int direction,
 void map::apply_light_arc( const tripoint_bub_ms &p, const units::angle &angle, float luminance,
                            const units::angle &wideangle, const light_color_rgb &color )
 {
+    ZoneScoped;
     if( luminance <= LIGHT_SOURCE_LOCAL ) {
         return;
     }
