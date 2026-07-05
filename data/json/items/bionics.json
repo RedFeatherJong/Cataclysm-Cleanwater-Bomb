@@ -1554,7 +1554,7 @@
     "difficulty": 10
   },
   {
-    "id": "bio_ltaic",
+    "id": "bio_betavoltaic",
     "copy-from": "bionic_general_npc_usable",
     "type": "ITEM",
     "subtypes": [ "BIONIC_ITEM" ],
