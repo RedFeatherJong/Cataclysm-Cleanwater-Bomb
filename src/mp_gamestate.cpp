@@ -298,18 +298,17 @@ void mp_do_turn_update_body( Character &u )
     s_last_update_body = calendar::turn;
 }
 
-// Per-turn processing (effects, needs, move regen), called from do_turn.cpp.
-// SP/host: one plain process_turn(). Client: process_turn() ticks effects/needs
-// exactly one turn per call with no catch-up, so calling it on every locked-spin
-// iteration over-applied them (confirmed: bleed/pain climbing while locked) and
-// a multi-turn jump under-applied them. Tick once per ELAPSED game-turn (skip on
-// locked spin, capped catch-up on jumps); discard the move regen — the client's
-// moves come from server grants.
+// Client per-turn processing (effects, needs, move regen), called from do_turn.cpp.
+// SP/host run their normal process_turn() in simulate_turn_suffix(). Client:
+// process_turn() ticks effects/needs exactly one turn per call with no catch-up,
+// so calling it on every locked-spin iteration over-applied them (confirmed:
+// bleed/pain climbing while locked) and a multi-turn jump under-applied them.
+// Tick once per ELAPSED game-turn (skip on locked spin, capped catch-up on
+// jumps); discard the move regen — the client's moves come from server grants.
 void mp_do_turn_process_turn( Character &u )
 {
     const int pre_moves = u.get_moves();
     if( !is_client_mode() ) {
-        u.process_turn();
         return;
     }
     static time_point s_last_proc = calendar::before_time_starts;

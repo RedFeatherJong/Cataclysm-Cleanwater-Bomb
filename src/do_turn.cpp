@@ -796,9 +796,11 @@ void game::simulate_turn_prefix()
     while( u.get_moves() > 0 && u.activity ) {
         u.activity.do_turn( u );
     }
-    // Ticks effects/needs once per elapsed game-turn, discards process_turn's move
-    // regen (client moves come from server grants).
-    cata_mp::mp_do_turn_process_turn( u );
+    // Client-only: tick effects/needs once per elapsed host turn, without granting
+    // local moves. SP/host process_turn() still runs in simulate_turn_suffix().
+    if( cata_mp::is_client_mode() ) {
+        cata_mp::mp_do_turn_process_turn( u );
+    }
     // Client: if a wait activity consumed the server-granted moves this turn,
     // dispatch "wait" so the server advances its timeline in sync.
     if( cata_mp::is_client_mode() && pre_activity_moves > 0 && u.get_moves() <= 0 ) {

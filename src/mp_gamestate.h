@@ -467,7 +467,8 @@ void mp_log_safemode_check( int newseen, int mostseen, int safe_mode );
 
 // Per-turn callouts invoked from do_turn.cpp (an SP file) so the MP per-turn
 // catch-up/gating logic lives here, not inline in the SP loop (rule 4, minimize
-// upstream merge conflicts). Non-client (SP/host) path = a single plain update.
+// upstream merge conflicts). Non-client (SP/host) process_turn() still happens
+// in the normal SP suffix path.
 // mp_do_turn_update_body: catches up the host-driven calendar's jumps (stamina
 //   regen, suffers, cravings). mp_do_turn_process_turn: ticks effects/needs once
 //   per elapsed game-turn (skip on locked spin, capped catch-up on jumps) and
