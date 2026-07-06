@@ -1,12 +1,6 @@
 #pragma once
 
-#include <atomic>
-#include <mutex>
-#include <string>
-#include <vector>
-
 #include "coordinates.h"
-#include "int_id.h"
 #include "string_id.h"
 
 class map_extra;
