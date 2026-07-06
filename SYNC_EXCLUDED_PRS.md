@@ -30,6 +30,8 @@
 | #87668 | 2026-06-18 | fix detergent use in washing | 未同步（detergent de-charge 连带修复，见下）|
 | #87891 | 2026-07-04 | CleverRaven/detergent (detergent itemgroup group spawn) | 未同步（detergent de-charge 关联） |
 | #87897 | 2026-07-05 | put bleach in bottles properly | 部分同步（仅 display/container，未取 group spawn 改） |
+| #87899 | 2026-07-06 | sack-o-pocalypsis (sand/soil de-charge + remove container) | 剔除（de-charge 系列，与 CCB charges+container 模型冲突） |
+| #87900 | 2026-07-06 | Display detergent by weight | 未同步（与 CCB BY_WEIGHT+stackable 模型冲突） |
 
 de-charge 系列此前的回退工作多数已作废（分支回到 master），故标"在库待回退"。
 
@@ -99,9 +101,7 @@ de-charge 系列此前的回退工作多数已作废（分支回到 master），
 | PR | 文件 | 处理方式 |
 |---|---|---|
 | #87897 (bleach 装瓶) | `SUS/domestic.json`, `collections_domestic.json` | 保留 CCB charges，不取 upstream group |
-| #87899 (沙袋去量化) | `locations.json` | 保留 CCB material_sand + charges |
-| #87900 (detergent 按重量) | `collections_domestic.json`, `chemicals_and_resources.json` | 保留 CCB BY_WEIGHT + stackable |
 
-**同步 PR（新）：** #87869, #87884, #87893, #87896, #87898, #87899, #87902, #87903, #87904, #87905, #87907
+**同步 PR（新）：** #87869, #87884, #87893, #87896, #87898, #87902, #87903, #87904, #87905, #87907
 
-**无新增排除项。**
+**剔除 PR：** #87899 (sack-o-pocalypsis，沙/土 de-charge，与 fork charges+container 模型冲突)
