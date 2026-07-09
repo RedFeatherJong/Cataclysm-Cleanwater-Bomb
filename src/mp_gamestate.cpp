@@ -122,7 +122,6 @@ void mp_log( const std::string &msg )
                    tmv.tm_hour, tmv.tm_min, tmv.tm_sec, wms );
     const std::string line = std::string( tbuf ) + "[+" +
                              std::to_string( delta_ms ) + "ms] " + msg;
-    std::cout << line << std::endl;
 
     // Also append to /tmp/cdda-mp-{server,client}.log so log capture doesn't
     // require launching via start-mp.sh's stdout-tee.  Opens lazily on the
@@ -173,9 +172,6 @@ void mp_log( const std::string &msg )
         current_path = desired_path;
         log_file << "\n[cdda-mp] ===================== LOG OPENED ====================="
                  << std::endl;
-        // Echo so the user can find it (esp. on Windows where the path varies).
-        std::cout << "[cdda-mp] log file: " << desired_path
-                  << ( log_file.is_open() ? "" : "  (OPEN FAILED)" ) << std::endl;
     }
     if( log_file.is_open() ) {
         log_file << line << '\n';

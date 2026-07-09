@@ -452,9 +452,10 @@ void set_client_turn_activity( const std::string &activity_id_str );
 // means "we last told the host: no activity".
 const std::string &get_client_turn_activity();
 
-// Write a [cdda-mp] log line to stdout AND to /tmp/cdda-mp-server.log or
+// Write a [cdda-mp] log line to /tmp/cdda-mp-server.log or
 // /tmp/cdda-mp-client.log (depending on mode).  Use this for any event that
-// should be readable after a session without stopping the process.
+// should be readable after a session without stopping the process.  Do not echo
+// to stdout: in curses builds that writes through the active terminal UI.
 void mp_log( const std::string &msg );
 
 // DIAGNOSTIC (temporary, 2026-06-23, for #5 assist-distraction / client safe-mode):
