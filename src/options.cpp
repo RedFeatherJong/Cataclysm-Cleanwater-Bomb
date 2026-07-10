@@ -1328,15 +1328,29 @@ std::vector<options_manager::id_and_option> options_manager::build_soundpacks_li
 std::unordered_set<std::string> options_manager::get_langs_with_translation_files()
 {
 #if defined(LOCALIZE)
-    const std::string start_str = locale_dir();
-    std::vector<std::string> lang_dirs =
-        get_directories_with( PATH_INFO::lang_file(), start_str, true );
-    std::for_each( lang_dirs.begin(), lang_dirs.end(), [&]( std::string & dir ) {
-        const std::size_t end = dir.rfind( "/LC_MESSAGES" );
-        const std::size_t begin = dir.rfind( '/', end - 1 ) + 1;
-        dir = dir.substr( begin, end - begin );
-    } );
-    return std::unordered_set<std::string>( lang_dirs.begin(), lang_dirs.end() );
+    std::unordered_set<std::string> lang_list;
+    const auto add_langs_from = [&lang_list]( const std::string &start_str ) {
+        if( start_str.empty() || !dir_exist( start_str ) ) {
+            return;
+        }
+        std::vector<std::string> lang_dirs =
+            get_directories_with( PATH_INFO::lang_file(), start_str, true );
+        for( const std::string &dir : lang_dirs ) {
+            const std::size_t end = dir.rfind( "/LC_MESSAGES" );
+            if( end == std::string::npos ) {
+                continue;
+            }
+            const std::size_t sep = dir.rfind( '/', end - 1 );
+            if( sep == std::string::npos ) {
+                continue;
+            }
+            lang_list.emplace( dir.substr( sep + 1, end - sep - 1 ) );
+        }
+    };
+
+    add_langs_from( locale_dir() );
+    add_langs_from( PATH_INFO::langdir() );
+    return lang_list;
 #else // !LOCALIZE
     return std::unordered_set<std::string>();
 #endif // LOCALIZE
@@ -2987,6 +3001,26 @@ void options_manager::add_options_performance()
                          "own z-level is prefetched, and reads are served nearest-first, so "
                          "higher values mainly cost background I/O, not main-thread time." ),
          0, 6, 2
+       );
+
+    add( "MULTITHREADING_ENABLED", "performance",
+         to_translation( "Enable multithreading (highly unstable)" ),
+         to_translation( "Enable the persistent worker thread pool for parallelizing "
+                         "game-logic work (cache rebuilds, monster AI, etc.).  "
+                         "Highly unstable: most subsystems are not yet wired to the pool, "
+                         "and multiplayer mode may cause data races.  "
+                         "Requires a restart after changing." ),
+         false
+       );
+
+    add( "THREAD_POOL_WORKERS", "performance",
+         to_translation( "Thread pool workers" ),
+         to_translation( "Number of worker threads in the pool when multithreading is enabled.  "
+                         "0 = auto (hardware_concurrency - 1, leaving one core for the main / "
+                         "SDL thread).  Lower this if the game stutters from worker contention "
+                         "or you want to reserve cores for other programs.  Requires a restart "
+                         "after changing." ),
+         0, 64, 0
        );
 }
 

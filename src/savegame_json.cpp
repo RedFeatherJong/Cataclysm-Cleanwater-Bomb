@@ -796,20 +796,20 @@ void Character::load( const JsonObject &data )
 
     JsonObject vits = data.get_object( "vitamin_levels" );
     vits.allow_omitted_members();
-    for( const std::pair<const vitamin_id, vitamin> &v : vitamin::all() ) {
-        if( vits.has_member( v.first.str() ) ) {
-            int lvl = vits.get_int( v.first.str() );
-            vitamin_levels[v.first] = clamp( lvl, v.first->min(), v.first->max() );
+    for( const vitamin &v : vitamin::all() ) {
+        if( vits.has_member( v.id.str() ) ) {
+            int lvl = vits.get_int( v.id.str() );
+            vitamin_levels[v.id] = clamp( lvl, v.min(), v.max() );
         }
     }
     JsonObject vits_daily = data.get_object( "daily_vitamins" );
     vits_daily.allow_omitted_members();
-    for( const std::pair<const vitamin_id, vitamin> &v : vitamin::all() ) {
-        if( vits_daily.has_member( v.first.str() ) ) {
-            JsonArray vals = vits_daily.get_array( v.first.str() );
+    for( const vitamin &v : vitamin::all() ) {
+        if( vits_daily.has_member( v.id.str() ) ) {
+            JsonArray vals = vits_daily.get_array( v.id.str() );
             int speculative = vals.next_int();
             int lvl = vals.next_int();
-            daily_vitamins[v.first] = { speculative, lvl };
+            daily_vitamins[v.id] = { speculative, lvl };
         }
     }
     data.read( "consumption_history", consumption_history );
@@ -2208,7 +2208,7 @@ void npc::load( const JsonObject &data )
 
     int misstmp = 0;
     int atttmp = 0;
-    std::string facID;
+    faction_id facID;
     std::string comp_miss_role;
     tripoint_abs_omt comp_miss_pt;
     std::string companion_mission_role;
@@ -2262,7 +2262,11 @@ void npc::load( const JsonObject &data )
     }
 
     if( data.read( "my_fac", facID ) ) {
-        fac_id = faction_id( facID );
+        if( facID.is_valid() ) {
+            fac_id = facID;
+        } else {
+            fac_id = faction_id::NULL_ID();
+        }
     }
     int temp_fac_api_ver = 0;
     if( data.read( "faction_api_ver", temp_fac_api_ver ) ) {
@@ -2672,11 +2676,7 @@ void monster::load( const JsonObject &data )
         }
     }
     data.read( "mission_fused", mission_fused );
-    // for migration, remove in 0.K
-    data.read( "no_extra_death_drops", death_drops );
-    data.read( "death_drops", death_drops );
-    data.read( "spawn_corpse", spawn_corpse );
-    data.read( "death_message", death_message );
+    data.read( "no_extra_death_drops", no_extra_death_drops );
     data.read( "dead", dead );
     data.read( "anger", anger );
     data.read( "morale", morale );
@@ -2763,9 +2763,7 @@ void monster::store( JsonOut &json ) const
     json.member( "faction", faction.id().str() );
     json.member( "mission_ids", mission_ids );
     json.member( "mission_fused", mission_fused );
-    json.member( "death_drops", death_drops );
-    json.member( "spawn_corpse", spawn_corpse );
-    json.member( "death_message", death_message );
+    json.member( "no_extra_death_drops", no_extra_death_drops );
     json.member( "dead", dead );
     json.member( "anger", anger );
     json.member( "morale", morale );

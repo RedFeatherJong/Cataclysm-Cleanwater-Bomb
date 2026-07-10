@@ -1,5 +1,6 @@
 #include "map.h"
 
+#define MP_ENABLED
 #include <algorithm>
 #include <array>
 #include <climits>
@@ -73,6 +74,9 @@
 #include "mapdata.h"
 #include "mapgen.h"
 #include "material.h"
+#ifdef MP_ENABLED
+#include "mp_gamestate.h"
+#endif
 #include "math_defines.h"
 #include "mission.h"
 #include "memory_fast.h"
@@ -87,6 +91,7 @@
 #include "pathfinding.h"
 #include "pocket_type.h"
 #include "power_network.h"
+#include "profiling.h"
 #include "projectile.h"
 #include "ranged.h"
 #include "relic.h"
@@ -617,6 +622,7 @@ void memorize_vpart_at( map &here, avatar &you, const tripoint_bub_ms &p,
 
 void map::update_map_memory( avatar &you )
 {
+    ZoneScoped;
     map &here = *this;
     const visibility_variables &cache = here.get_visibility_variables_cache();
     const tripoint_bub_ms you_pos = you.pos_bub( here );
@@ -1124,6 +1130,7 @@ void map::resolve_appliance_grid_power()
 
 void map::vehmove()
 {
+    ZoneScoped;
     // give vehicles movement points
     VehicleList vehicle_list;
     int minz = zlevels ? -OVERMAP_DEPTH : abs_sub.z();
@@ -1155,6 +1162,9 @@ void map::vehmove()
         if( !vehproceed( vehicle_list ) ) {
             break;
         }
+#ifdef MP_ENABLED
+        cata_mp::host_broadcast_vehicle_step();
+#endif
     }
     // Process item removal on the vehicles that were modified this turn.
     // Use a copy because part_removal_cleanup can modify the container.
@@ -1310,6 +1320,17 @@ vehicle *map::move_vehicle( vehicle &veh, const tripoint_rel_ms &dp, const tiler
     do {
         collisions.clear();
         veh.collision( *this, collisions, dp1, false );
+#ifdef MP_ENABLED
+        if( cata_mp::is_hosting() && !collisions.empty() ) {
+            for( const veh_collision &c : collisions ) {
+                cata_mp::mp_log( "[veh-coll] veh=" + veh.name +
+                                  " type=" + std::to_string( static_cast<int>( c.type ) ) +
+                                  " imp=" + std::to_string( c.imp ) +
+                                  " target=" + c.target_name +
+                                  " dp=" + std::to_string( dp1.x() ) + "," + std::to_string( dp1.y() ) );
+            }
+        }
+#endif
 
         // Vehicle collisions
         std::map<vehicle *, std::vector<veh_collision> > veh_collisions;
@@ -3225,8 +3246,14 @@ void map::kill_creature( const tripoint_bub_ms &p, bool remove_corpse )
     Creature *tmp_critter = get_creature_tracker().creature_at( get_abs( p ), true );
     if( tmp_critter && !tmp_critter->is_avatar() ) {
         if( remove_corpse ) {
-            tmp_critter->death_drops = false;
-            tmp_critter->spawn_corpse = false;
+            if( monster *mon = tmp_critter->as_monster(); mon != nullptr ) {
+                mon->death_drops = false;
+                mon->no_corpse_quiet = true;
+
+            } else if( npc *npc = tmp_critter->as_npc(); npc != nullptr ) {
+                npc->death_drops = false;
+                npc->quiet_death = true;
+            }
         }
         tmp_critter->die( this, nullptr );
     }
@@ -4073,6 +4100,7 @@ void map::support_dirty( const tripoint_bub_ms &p )
 
 void map::process_falling()
 {
+    ZoneScoped;
     if( !zlevels ) {
         support_cache_dirty.clear();
         return;
@@ -7179,6 +7207,7 @@ static void process_vehicle_items( vehicle &cur_veh, int part )
 
 void map::process_items()
 {
+    ZoneScoped;
     const int minz = zlevels ? -OVERMAP_DEPTH : abs_sub.z();
     const int maxz = zlevels ? OVERMAP_HEIGHT : abs_sub.z();
     for( int gz = minz; gz <= maxz; ++gz ) {
@@ -7557,7 +7586,7 @@ std::list<item> map::use_amount( const tripoint_bub_ms &origin, const int range,
                                  const itype_id &type,
                                  int &quantity, const std::function<bool( const item & )> &filter, bool select_ind )
 {
-    const std::vector<tripoint_bub_ms> &reachable_pts = reachable_flood_steps( origin, range, 1, 100 );
+    const std::vector<tripoint_bub_ms> &reachable_pts = reachable_item_points( origin, range, 1, 100 );
     return use_amount( reachable_pts, type, quantity, filter, select_ind );
 }
 
@@ -7688,7 +7717,7 @@ std::list<item> map::use_charges( const tripoint_bub_ms &origin, const int range
                                   basecamp *bcp, bool in_tools )
 {
     // populate a grid of spots that can be reached
-    const std::vector<tripoint_bub_ms> &reachable_pts = reachable_flood_steps( origin, range, 1, 100 );
+    const std::vector<tripoint_bub_ms> &reachable_pts = reachable_item_points( origin, range, 1, 100 );
     return use_charges( reachable_pts, type, quantity, filter, bcp, in_tools );
 }
 
@@ -7720,7 +7749,7 @@ units::energy map::consume_ups( const std::vector<tripoint_bub_ms> &reachable_pt
 units::energy map::consume_ups( const tripoint_bub_ms &origin, const int range, units::energy qty )
 {
     // populate a grid of spots that can be reached
-    const std::vector<tripoint_bub_ms> &reachable_pts = reachable_flood_steps( origin, range, 1, 100 );
+    const std::vector<tripoint_bub_ms> &reachable_pts = reachable_item_points( origin, range, 1, 100 );
     return consume_ups( reachable_pts, qty );
 }
 
@@ -8351,6 +8380,7 @@ void map::update_submaps_with_active_items()
 
 void map::update_visibility_cache( const int zlev )
 {
+    ZoneScoped;
     Character &player_character = get_player_character();
     const tripoint_bub_ms pos = player_character.pos_bub( *this );
 
@@ -9330,6 +9360,31 @@ std::vector<tripoint_bub_ms> map::reachable_flood_steps( const tripoint_bub_ms &
     return reachable_pts;
 }
 
+std::vector<tripoint_bub_ms> map::reachable_item_points( const tripoint_bub_ms &f, int range,
+        const int cost_min, const int cost_max ) const
+{
+    std::vector<tripoint_bub_ms> reachable_pts = reachable_flood_steps( f, range, cost_min,
+            cost_max );
+
+    const optional_vpart_position origin_vp = veh_at( f );
+    if( !origin_vp || !origin_vp->vehicle().is_flying_in_air() ) {
+        return reachable_pts;
+    }
+
+    const vehicle &veh = origin_vp->vehicle();
+    for( const tripoint_abs_ms &abs_pt : veh.get_points() ) {
+        const tripoint_bub_ms p = get_bub( abs_pt );
+        if( !inbounds( p ) || p.z() != f.z() || rl_dist( f, p ) > range ) {
+            continue;
+        }
+        if( std::find( reachable_pts.begin(), reachable_pts.end(), p ) == reachable_pts.end() ) {
+            reachable_pts.push_back( p );
+        }
+    }
+
+    return reachable_pts;
+}
+
 bool map::clear_path( const tripoint_bub_ms &f, const tripoint_bub_ms &t, const int range,
                       const int cost_min, const int cost_max ) const
 {
@@ -9420,7 +9475,7 @@ void map::for_each_reachable_item( const tripoint_bub_ms &center, int radius,
                                    const Character *ch,
                                    const std::function<void( const item & )> &fn )
 {
-    for( const tripoint_bub_ms &p : reachable_flood_steps( center, radius, 1, 100 ) ) {
+    for( const tripoint_bub_ms &p : reachable_item_points( center, radius, 1, 100 ) ) {
         if( accessible_items( p ) ) {
             for( const item &it : i_at( p ) ) {
                 if( ch && !it.is_owned_by( *ch, true ) ) {
@@ -11535,6 +11590,7 @@ bool map::build_floor_cache( const int zlev )
 
 void map::build_floor_caches()
 {
+    ZoneScoped;
     const int minz = zlevels ? -OVERMAP_DEPTH : abs_sub.z();
     const int maxz = zlevels ? OVERMAP_HEIGHT : abs_sub.z();
     for( int z = minz; z <= maxz; z++ ) {
@@ -11610,6 +11666,7 @@ void map::do_vehicle_caching( int z )
 
 void map::build_map_cache( const int zlev, bool skip_lightmap )
 {
+    ZoneScoped;
     const int minz = zlevels ? -OVERMAP_DEPTH : zlev;
     const int maxz = zlevels ? OVERMAP_HEIGHT : zlev;
     bool seen_cache_dirty = false;

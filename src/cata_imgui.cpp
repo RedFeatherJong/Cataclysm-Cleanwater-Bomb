@@ -118,6 +118,7 @@ cataimgui::client::client()
     ImTui_ImplNcurses_Init();
     ImTui_ImplText_Init();
     ImGuiIO &io = ImGui::GetIO();
+    io.ConfigErrorRecoveryEnableAssert = false;
 
     ( void )io;
 
@@ -309,6 +310,7 @@ cataimgui::client::client( const SDL_Renderer_Ptr &sdl_renderer, const SDL_Windo
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
+    io.ConfigErrorRecoveryEnableAssert = false;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigInputTrickleEventQueue = false;
@@ -983,7 +985,8 @@ cataimgui::window::window( int window_flags )
 cataimgui::window::window( const std::string &id_, int window_flags ) : window( window_flags )
 {
     p_impl = std::make_unique<cataimgui::window_impl>( this );
-    id = id_ + "##" + std::to_string( uint64_t( this ) );
+    const std::string &safe_id = id_.empty() ? "window" : id_;
+    id = safe_id + "##" + std::to_string( uint64_t( this ) );
     is_open = true;
 }
 

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <list>
@@ -14,9 +15,9 @@
 
 #include "bodypart.h"
 #include "calendar.h"
-#include "cata_variant.h"
 #include "cata_compiler_support.h"
 #include "cata_utility.h"
+#include "cata_variant.h"
 #include "character.h"
 #include "character_id.h"
 #include "condition.h"
@@ -58,6 +59,8 @@
 #include "value_ptr.h"
 #include "veh_type.h"
 #include "vehicle.h"
+#include "vpart_position.h"
+#include "vpart_range.h"
 #include "weather.h"
 #include "weather_gen.h"
 #include "weather_type.h"
@@ -572,6 +575,14 @@ double knows_proficiency_eval( const_dialogue const &d, char scope,
 {
     return d.const_actor( is_beta( scope ) )
            ->knows_proficiency( proficiency_id( params[0].str( d ) ) );
+}
+
+double has_wielded_with_flag_eval( const_dialogue const &d, char scope,
+                                   std::vector<diag_value> const &params,
+                                   diag_kwargs const & /* kwargs */ )
+{
+    return d.const_actor( is_beta( scope ) )
+           ->wielded_with_flag( flag_id( params[0].str( d ) ) );
 }
 
 double hp_eval( const_dialogue const &d, char scope, std::vector<diag_value> const &params,
@@ -2039,6 +2050,7 @@ std::map<std::string_view, dialogue_func> const dialogue_funcs{
     { "sum_traits_of_category", { "un", 1, sum_traits_of_category_eval, {}, { "type" } } },
     { "sum_traits_of_category_char_has", { "un", 1, sum_traits_of_category_char_has_eval, {}, { "type" } } },
     { "has_proficiency", { "un", 1, knows_proficiency_eval } },
+    { "has_wielded_with_flag", { "un", 1, has_wielded_with_flag_eval } },
     { "has_var", { "g", 1, has_var_eval } },
     { "hp", { "un", 1, hp_eval, hp_ass } },
     { "hp_max", { "un", 1, hp_max_eval } },

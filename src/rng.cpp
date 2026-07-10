@@ -204,11 +204,26 @@ cata_default_random_engine::result_type rng_get_first_seed()
     return static_cast<cata_default_random_engine::result_type>( seed );
 }
 
+// Per-worker-thread engine.  Inactive (flag=false) on the main thread.
+// NOLINTNEXTLINE(cata-determinism)
+static thread_local bool tl_is_worker = false;
+// NOLINTNEXTLINE(cata-determinism)
+static thread_local cata_default_random_engine tl_worker_engine;
+
 cata_default_random_engine &rng_get_engine()
 {
+    if( tl_is_worker ) {
+        return tl_worker_engine;
+    }
     // NOLINTNEXTLINE(cata-determinism)
     static cata_default_random_engine eng( rng_get_first_seed() );
     return eng;
+}
+
+void rng_set_worker_seed( unsigned int seed )
+{
+    tl_is_worker = true;
+    tl_worker_engine.seed( seed );
 }
 
 void rng_set_engine_seed( unsigned int seed )

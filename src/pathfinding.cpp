@@ -30,6 +30,7 @@
 #include "messages.h"
 #include "maptile_fwd.h"
 #include "point.h"
+#include "profiling.h"
 #include "submap.h"
 #include "trap.h"
 #include "veh_type.h"
@@ -422,6 +423,7 @@ std::vector<tripoint_bub_ms> map::route( const tripoint_bub_ms &f,
         const pathfinding_settings &settings,
         const std::function<bool( const tripoint_bub_ms & )> &avoid ) const
 {
+    ZoneScoped;
     /* TODO: If the origin or destination is out of bound, figure out the closest
      * in-bounds point and go to that, then to the real origin/destination.
      */

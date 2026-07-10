@@ -36,6 +36,8 @@ option(CATA_CLANG_TIDY_PLUGIN "Build Cata's custom clang-tidy checks as a plugin
 option(CATA_CLANG_TIDY_EXECUTABLE "Build Cata's custom clang-tidy checks as an executable" "OFF")
 option(WARN_STALE_DATA "Warn if file integrity check fails" "OFF")
 option(TESTS "Compile Cata's tests" "ON")
+option(TRACY "Enable Tracy profiler instrumentation (requires tracy library installed). Off by default; when ON, source files using profiling.h emit Tracy zones. See .claude/skills/build-tracy." OFF)
+option(LTO "Enable link-time optimization (interprocedural optimization) for Release/RelWithDebInfo builds." OFF)
 set(CATA_CLANG_TIDY_INCLUDE_DIR "" CACHE STRING
         "Path to internal clang-tidy headers required for plugin (e.g. ClangTidy.h)")
 set(CATA_CHECK_CLANG_TIDY "" CACHE STRING "Path to check_clang_tidy.py for plugin tests")
@@ -263,6 +265,19 @@ if (NOT MSVC)
     if (HAVE_SFINAE_INCOMPLETE)
         set(CATA_WARNINGS "${CATA_WARNINGS} -Wno-error=sfinae-incomplete")
     endif ()
+    # GCC 16 -Wmaybe-uninitialized: false positives on std::optional-based
+    # iterators (e.g. vehicle_part_iterator).  The flow-based analysis is
+    # defeated by the optional wrapper.
+    check_cxx_compiler_flag(-Wmaybe-uninitialized HAVE_MAYBE_UNINITIALIZED)
+    if (HAVE_MAYBE_UNINITIALIZED)
+        set(CATA_WARNINGS "${CATA_WARNINGS} -Wno-error=maybe-uninitialized")
+    endif ()
+    # GCC 16 -Warray-bounds: false positives on std::shared_ptr / make_shared
+    # with -O3 inlining (e.g. _Sp_counted_ptr_inplace sizing).
+    check_cxx_compiler_flag(-Warray-bounds HAVE_ARRAY_BOUNDS)
+    if (HAVE_ARRAY_BOUNDS)
+        set(CATA_WARNINGS "${CATA_WARNINGS} -Wno-error=array-bounds")
+    endif ()
     if (NOT "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
         set(CATA_WARNINGS "${CATA_WARNINGS} -Wredundant-decls")
     endif ()
@@ -291,6 +306,47 @@ set(CMAKE_THREAD_PREFER_PTHREAD True)
 find_package(Threads REQUIRED)
 
 find_package(ZLIB REQUIRED)
+
+# --- Tracy profiler -----------------------------------------------------------
+# The tracy package on Arch/Debian installs headers under a doubled path
+# (e.g. /usr/include/Tracy/tracy/tracy/TracyC.h) and ships libTracyClient.
+# PATH_SUFFIXES covers the common install layouts so #include "tracy/TracyC.h"
+# resolves once TRACY_INCLUDE_DIR is added to the include path.
+if (TRACY)
+    find_path(TRACY_INCLUDE_DIR
+        NAMES tracy/TracyC.h
+        PATH_SUFFIXES tracy Tracy/tracy tracy/tracy)
+    find_library(TRACY_LIBRARY NAMES TracyClient)
+    if (NOT TRACY_INCLUDE_DIR OR NOT TRACY_LIBRARY)
+        message(FATAL_ERROR "TRACY=ON but the tracy headers/library were not found.\n"
+            "Install the tracy package (e.g. 'pacman -S tracy' on Arch, or build\n"
+            "tracy from source and set TRACY_INCLUDE_DIR / TRACY_LIBRARY manually).")
+    endif()
+    message(STATUS "Tracy profiler : enabled")
+    message(STATUS "  Tracy include: ${TRACY_INCLUDE_DIR}")
+    message(STATUS "  Tracy library: ${TRACY_LIBRARY}")
+    # TRACY_ENABLE is what the tracy headers check to activate the real macros
+    # (see Tracy.hpp:19).  Without it the headers compile to no-ops; we define
+    # it globally so src/profiling.h picks up the real implementations.
+    add_compile_definitions(TRACY_ENABLE)
+else()
+    message(STATUS "Tracy profiler : disabled")
+endif()
+
+# --- Link-time optimization ---------------------------------------------------
+if (LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT lto_supported OUTPUT lto_output)
+    if (lto_supported)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+        message(STATUS "Link-time optimization : enabled")
+    else()
+        message(WARNING "LTO=ON but not supported by the current toolchain: ${lto_output}\n"
+            "Proceeding without LTO.")
+    endif()
+else()
+    message(STATUS "Link-time optimization : disabled")
+endif()
 
 # Check for build types and libraries
 if (TILES AND USE_SDL3)

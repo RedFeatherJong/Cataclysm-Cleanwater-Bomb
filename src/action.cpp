@@ -376,6 +376,14 @@ std::string action_ident( action_id act )
             return "action_menu";
         case ACTION_INTERACT:
             return "interact";
+        case ACTION_PASS_ITEM:
+            return "pass_item";
+        case ACTION_HIGH_FIVE:
+            return "high_five";
+        case ACTION_COOP_CHAT:
+            return "coop_chat";
+        case ACTION_MANAGE_ANDROID_EXTRA_BUTTONS:
+            return "manage_android_extra_buttons";
         case ACTION_ITEMACTION:
             return "item_action_menu";
         case ACTION_SELECT:
@@ -458,6 +466,7 @@ bool can_action_change_worldstate( const action_id act )
         case ACTION_WORLD_MODS:
         case ACTION_DISTRACTION_MANAGER:
         case ACTION_EXPORT_BUG_REPORT_ARCHIVE:
+        case ACTION_MANAGE_ANDROID_EXTRA_BUTTONS:
         // Debug Functions
         case ACTION_TOGGLE_FULLSCREEN:
         case ACTION_DEBUG:
@@ -1125,14 +1134,18 @@ action_id handle_main_menu()
     REGISTER_ACTION( ACTION_COLOR );
     REGISTER_ACTION( ACTION_WORLD_MODS );
     REGISTER_ACTION( ACTION_ACTIONMENU );
+#if defined(__ANDROID__)
+    entries.emplace_back( ACTION_MANAGE_ANDROID_EXTRA_BUTTONS, true, std::nullopt,
+                          _( "Manage extra buttons" ) );
+#endif
     REGISTER_ACTION( ACTION_QUICKSAVE );
-    REGISTER_ACTION( ACTION_QUICKLOAD );
     REGISTER_ACTION( ACTION_SAVE );
     REGISTER_ACTION( ACTION_SNAPSHOT_MENU );
     REGISTER_ACTION( ACTION_QUIT_TO_SNAPSHOT );
     if( hotkey_for_action( ACTION_DEBUG, /*maximum_modifier_count=*/1, false ).has_value() ) {
         REGISTER_ACTION( ACTION_DEBUG, 'D' );
     }
+    REGISTER_ACTION( ACTION_QUICKLOAD );
 
     // Special handling: This one is not a keybind, so we emplace it manually with a descriptive name.
     entries.emplace_back( ACTION_EXPORT_BUG_REPORT_ARCHIVE, true, 'd',

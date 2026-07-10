@@ -102,6 +102,8 @@
 #include "mission.h"
 #include "mongroup.h"
 #include "monster.h"
+#include "mp_gamestate.h"
+#include "mp_client_conn.h"
 #include "mtype.h"
 #include "mutation.h"
 #include "npc.h"
@@ -1536,6 +1538,9 @@ void game::chat( const std::optional<tripoint_bub_ms> &p )
     if( !message.empty() ) {
         add_msg( _( "You yell %s" ), message );
         u.shout( string_format( _( "%s yelling %s" ), u.disp_name(), message ), is_order );
+        if( cata_mp::is_client_mode() ) {
+            cata_mp::mp_relay_shout( volume, is_order );
+        }
     }
     if( !emote_msg.empty() ) {
         add_msg( emote_msg );
@@ -6064,11 +6069,15 @@ talk_effect_fun_t::func f_die_advanced( const JsonObject &jo, std::string_view m
     return [remove_corpse, supress_message, is_npc]( dialogue const & d ) {
         map &here = get_map();
 
-        Creature *cr = d.actor( is_npc )->get_creature();
-
-        cr->death_message = supress_message.has_value() ? !supress_message.value() : cr->death_message;
-        cr->spawn_corpse = remove_corpse.has_value() ? !remove_corpse.value() : cr->spawn_corpse;
-        cr->death_drops = remove_corpse.has_value() ? !remove_corpse.value() : cr->death_drops;
+        if( d.actor( is_npc )->get_monster() ) {
+            monster &mon = *d.actor( is_npc )->get_monster();
+            mon.death_drops = remove_corpse.has_value() ? !remove_corpse.value() : mon.death_drops;
+            mon.quiet_death = supress_message.has_value() ? supress_message.value() : mon.quiet_death;
+        } else if( d.actor( is_npc )->get_npc() ) {
+            npc &guy_npc = *d.actor( is_npc )->get_npc();
+            guy_npc.spawn_corpse = remove_corpse.has_value() ? !remove_corpse.value() : guy_npc.spawn_corpse;
+            guy_npc.quiet_death = supress_message.has_value() ? supress_message.value() : guy_npc.quiet_death;
+        }
 
         d.actor( is_npc )->die( &here );
     };
@@ -7447,8 +7456,8 @@ talk_effect_fun_t::func f_foreach( const JsonObject &jo, std::string_view member
                     list.push_back( m.id.str() );
                 }
             } else if( target == "vitamin" ) {
-                for( const std::pair<const vitamin_id, vitamin> &v : vitamin::all() ) {
-                    list.push_back( v.first.str() );
+                for( const vitamin &v : vitamin::all() ) {
+                    list.push_back( v.id.str() );
                 }
             }
         } else if( type == "item_group" ) {
@@ -7933,8 +7942,8 @@ talk_effect_fun_t::func f_spawn_monster( const JsonObject &jo, std::string_view 
                     if( lifespan.value() > 0_seconds ) {
                         spawned->set_summon_time( lifespan.value() );
                         // Temporary monsters shouldn't drop items unless told to
-                        spawned->death_drops = temporary_drop_items;
-                        spawned->spawn_corpse = temporary_drop_items;
+                        spawned->no_extra_death_drops = !temporary_drop_items;
+                        spawned->no_corpse_quiet = !temporary_drop_items;
                     }
                 }
             }

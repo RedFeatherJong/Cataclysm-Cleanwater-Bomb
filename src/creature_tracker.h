@@ -2,6 +2,7 @@
 #ifndef CATA_SRC_CREATURE_TRACKER_H
 #define CATA_SRC_CREATURE_TRACKER_H
 
+#include <bitset>
 #include <cstddef>
 #include <list>
 #include <memory>
@@ -12,6 +13,7 @@
 
 #include "coordinates.h"
 #include "creature.h"
+#include "map_scale_constants.h"
 #include "memory_fast.h"
 #include "type_id.h"
 
@@ -133,6 +135,14 @@ class creature_tracker
             dirty_ = true;
         }
 
+        /**
+         * Eagerly compute reachability zones for all creatures in parallel.
+         * Call this before the monster AI loop so that per-creature
+         * find_reachable() calls hit the cache instead of triggering
+         * individual flood fills.
+         */
+        void precompute_all_zones();
+
     private:
         /** Remove the monsters entry in @ref monsters_by_location */
         void remove_from_location_map( const monster &critter );
@@ -140,6 +150,9 @@ class creature_tracker
         void flood_fill_zone( const Creature &origin );
 
         void rebuild_cache();
+
+        /** Rebuild the passability bitmap from level caches. Called when dirty_ is set. */
+        void rebuild_passability_bitmap();
 
         // If the creature is in the tracker.
         bool is_present( Creature *creature ) const;
@@ -163,6 +176,14 @@ class creature_tracker
         int zone_number_ = 0;  // NOLINT(cata-serialize)
         std::unordered_map<int, std::unordered_map<mfaction_id, std::vector<shared_ptr_fast<Creature>>>>
         creatures_by_zone_and_faction_;  // NOLINT(cata-serialize)
+
+        // Pre-computed passability bitmap for flood_fill_zone.  Each bit is
+        // true when the tile is transparent-without-fields OR passable (terrain
+        // movecost != 0).  Rebuilt only when dirty_ is set (terrain/furniture
+        // changes), so vehicle positions may be stale — acceptable for zone
+        // caching which is itself a lazy approximation.
+        std::array<std::array<std::bitset<MAPSIZE_Y>, MAPSIZE_X>, OVERMAP_LAYERS>
+        passability_bitmap_{};  // NOLINT(cata-serialize)
 
         friend game;
 };

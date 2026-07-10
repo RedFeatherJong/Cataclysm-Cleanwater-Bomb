@@ -31,24 +31,35 @@ jobs:
     permissions: write-all
     outputs:
       timestamp: ${{ steps.meta.outputs.time }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
     steps:
       - name: Generate release metadata
         id: meta
         run: |
           time=$(TZ=Asia/Shanghai /bin/date "+%Y-%m-%d-%H%M")
+          title_time=$(TZ=Asia/Shanghai /bin/date "+%Y-%m-%d %H:%M")
           echo "time=$time" >> $GITHUB_OUTPUT
-          echo "tag_name=ccb-experimental-${time}" >> $GITHUB_OUTPUT
-          echo "release_name=Cataclysm-Cleanwater-Bomb experimental build ${time}" >> $GITHUB_OUTPUT
+          echo "tag_name=${time}" >> $GITHUB_OUTPUT
+          echo "release_name=Experimental ${title_time}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
+      - name: Find previous release tag
+        id: previous
+        run: |
+          previous_tag=$(git describe --tags --abbrev=0 \
+            --match '20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]' \
+            --match 'ccb-experimental-*' HEAD^ 2>/dev/null || true)
+          echo "previous_tag=${previous_tag}" >> $GITHUB_OUTPUT
       - name: Generate Release Notes
         run: |
           npm install @actions/github@8
-          node build-scripts/generate-release-notes.js '${{ secrets.GITHUB_TOKEN }}' '${{ steps.meta.outputs.tag_name }}' "$(git log -1 --format='%H')" > notes.txt
+          node build-scripts/generate-release-notes.js '${{ secrets.GITHUB_TOKEN }}' '${{ steps.meta.outputs.tag_name }}' "$(git log -1 --format='%H')" '${{ steps.previous.outputs.previous_tag }}' > notes.txt
       - name: Create GitHub Release
         run: |
-          gh release create '${{ steps.meta.outputs.tag_name }}' --notes-file notes.txt --prerelease --title '${{ steps.meta.outputs.release_name }}' --target "$(git log -1 --format='%H')"
+          gh release create '${{ steps.meta.outputs.tag_name }}' --notes-file notes.txt --prerelease --latest --title '${{ steps.meta.outputs.release_name }}' --target "$(git log -1 --format='%H')"
 
   compose-tilesets:
     uses: ./.github/workflows/compose-tilesets.yml
@@ -779,4 +790,4 @@ jobs:
                mv ./app/build/outputs/apk/experimental/release/*.apk ../ccb-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.apk 
           fi
       - run: |
-          gh release upload ccb-experimental-${{ needs.release.outputs.timestamp }} ccb-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.${{ matrix.ext }}
+          gh release upload '${{ needs.release.outputs.tag_name }}' ccb-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.${{ matrix.ext }}

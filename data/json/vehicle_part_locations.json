@@ -16,6 +16,14 @@
   },
   {
     "type": "vehicle_part_location",
+    "id": "damping",
+    "name": "Damping",
+    "//": "Shock absorber plates share the armor display layer.",
+    "z_order": -2,
+    "list_order": 2
+  },
+  {
+    "type": "vehicle_part_location",
     "id": "on_roof",
     "name": "On Roof",
     "z_order": 9,
