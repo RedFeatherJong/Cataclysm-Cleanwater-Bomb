@@ -19,6 +19,7 @@
 #include "magic_ter_furn_transform.h"
 #include "map.h"
 #include "mapdata.h"
+#include "options.h"
 #include "point.h"
 #include "submap.h"
 #include "translation.h"
@@ -59,18 +60,18 @@ static void sync_plant_seed_after_furniture_transform( map &m, const tripoint_bu
     if( growth_multiplier <= 0.0f ) {
         return;
     }
-    const time_duration threshold = iexamine::get_plant_stage_threshold( growth_stages,
+    const float crop_growth_speed = ::get_option<float>( "CROP_GROWTH_SPEED" );
+    const time_duration threshold = iexamine::get_plant_stage_threshold( *seed->type->seed,
                                     new_stage_idx );
     const time_duration current_effective = iexamine::get_plant_effective_growth_time( *seed,
             growth_multiplier );
 
-    if( current_effective < threshold ) {
-        iexamine::set_plant_effective_growth_turns( *seed, to_turns<int>( threshold ) );
-        seed->set_birthday( calendar::turn - threshold / growth_multiplier );
-    } else {
-        // Keep the seed birthday consistent with the existing effective time.
-        seed->set_birthday( calendar::turn - current_effective / growth_multiplier );
-    }
+    // Effective growth time is stored in base growth units.  CROP_GROWTH_SPEED only
+    // affects how fast those units accumulate during natural growth, so the
+    // threshold for a given furniture stage is the base threshold.
+    const time_duration new_effective = std::max( current_effective, threshold );
+    iexamine::set_plant_effective_growth_time( *seed, new_effective, growth_multiplier,
+            crop_growth_speed );
 }
 
 } // namespace

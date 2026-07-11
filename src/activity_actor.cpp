@@ -10297,6 +10297,15 @@ void fertilize_plant_activity_actor::start( player_activity &act, Character & )
     act.moves_left = act.moves_total;
 }
 
+namespace
+{
+// Fertilizer reduces the remaining distance to mature by a base percentage plus a
+// survival-skill bonus, scaled by the fertilizer's quality, with a hard cap.
+constexpr double fertilizer_base_reduction = 0.20;
+constexpr double fertilizer_survival_bonus = 0.05;
+constexpr double fertilizer_max_reduction = 0.50;
+} // namespace
+
 void fertilize_plant_activity_actor::finish( player_activity &act, Character &who )
 {
     if( !fertilizer.is_valid() ) {
@@ -10317,23 +10326,23 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
         return;
     }
 
-    const std::vector<std::pair<flag_id, time_duration>> &growth_stages =
-        seed->type->seed->get_growth_stages();
-
     const float growth_multiplier = here.furn( plant_position )->plant->growth_multiplier;
 
     // Time required to reach the mature stage in effective growth units.
-    const int mature_stage_idx = iexamine::get_plant_mature_stage_idx( growth_stages );
+    const int mature_stage_idx = iexamine::get_plant_mature_stage_idx( *seed->type->seed );
     if( mature_stage_idx < 0 ) {
         add_msg( m_info, _( "The %s is too mature to benefit from fertilizer." ),
                  seed->get_plant_name() );
         act.set_to_null();
         return;
     }
-    const time_duration mature_threshold = iexamine::get_plant_stage_threshold( growth_stages,
+    const time_duration mature_threshold = iexamine::get_plant_stage_threshold( *seed->type->seed,
             mature_stage_idx );
 
-    // Current effective growth time (new saves) or estimate from age (old saves).
+    const float crop_growth_speed = ::get_option<float>( "CROP_GROWTH_SPEED" );
+
+    // Current effective growth time in base growth units (new saves) or estimated
+    // from age (old saves).
     const time_duration current_effective = iexamine::get_plant_effective_growth_time( *seed,
             growth_multiplier );
 
@@ -10358,20 +10367,22 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
         return;
     }
 
-    // Shorten the distance to mature: 20% base + 5% per survival level, multiplied by
-    // the fertilizer's quality, capped at 50%.
+    // Shorten the distance to mature: base reduction + survival bonus, multiplied by
+    // the fertilizer's quality, capped at a maximum.
     const double survival_level = who.get_skill_level( skill_survival );
     const double fertilizer_quality = fertilizer->fertilizer_quality;
-    const double reduction_pct = std::min( ( 0.20 + 0.05 * survival_level ) * fertilizer_quality,
-                                           0.50 );
+    const double reduction_pct = std::min(
+                                     ( fertilizer_base_reduction + fertilizer_survival_bonus * survival_level ) *
+                                     fertilizer_quality,
+                                     fertilizer_max_reduction );
 
     const time_duration reduction = distance_to_mature * reduction_pct;
     const time_duration new_effective = current_effective + reduction;
 
     // Advance effective growth time, mark the plant as fertilized, and keep birthday in sync.
-    iexamine::set_plant_effective_growth_turns( *seed, to_turns<int>( new_effective ) );
     iexamine::set_plant_fertilized( *seed, true );
-    seed->set_birthday( calendar::turn - new_effective / growth_multiplier );
+    iexamine::set_plant_effective_growth_time( *seed, new_effective, growth_multiplier,
+            crop_growth_speed );
 
     // Apply any stage advances immediately.
     here.grow_plant( plant_position );
@@ -10468,6 +10479,10 @@ ret_val<void> multi_farm_activity_actor::can_fertilize( Character &,
     if( !here.has_flag_furn( ter_furn_flag::TFLAG_PLANT, tile ) ) {
         return ret_val<void>::make_failure( _( "Tile isn't a plant" ) );
     }
+
+    // Synchronize furniture flag with effective growth time before deciding
+    // whether the plant can still benefit from fertilizer.
+    here.grow_plant( tile );
 
     // Authoritative check based on effective growth time: mature, harvestable,
     // or overgrown plants cannot benefit from fertilizer.
