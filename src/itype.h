@@ -1302,12 +1302,24 @@ struct islot_seed {
         islot_seed() = default;
 
         const std::vector<std::pair<flag_id, time_duration>> &get_growth_stages() const;
+        const std::vector<time_duration> &get_cumulative_stage_thresholds() const;
+        int get_mature_stage_idx() const;
+        int get_harvest_stage_idx() const;
+        int get_overgrown_stage_idx() const;
         units::temperature get_growth_temp() const;
+
+        void finalize();
     private:
         /**
         * What stages of growth does this plant have? How long does each stage of growth last?
         */
         std::vector<std::pair<flag_id, time_duration>> growth_stages;
+        // Cumulative thresholds computed from growth_stages for O(1) lookups.
+        std::vector<time_duration> cumulative_stage_thresholds;
+        // Cached indices of special lifecycle stages; -1 if absent.
+        int mature_stage_idx = -1;
+        int harvest_stage_idx = -1;
+        int overgrown_stage_idx = -1;
         // Temperature needs to be at or above this temp for the plant to be planted/grow.
         units::temperature growth_temp;
 };

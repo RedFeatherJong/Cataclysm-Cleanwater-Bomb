@@ -379,6 +379,10 @@ void Item_factory::finalize_pre( itype &obj )
         obj.relic_data->finalize();
     }
 
+    if( obj.seed ) {
+        obj.seed->finalize();
+    }
+
     if( obj.count_by_charges() ) {
         obj.item_tags.insert( flag_NO_REPAIR );
     }
