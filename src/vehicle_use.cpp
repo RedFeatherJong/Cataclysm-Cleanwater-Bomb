@@ -40,6 +40,7 @@
 #include "map_scale_constants.h"
 #include "mapdata.h"
 #include "messages.h"
+#include "options.h"
 #include "monster.h"
 #include "mtype.h"
 #include "output.h"
@@ -1058,7 +1059,8 @@ void vehicle::operate_reaper( map &here )
 {
     for( const vpart_reference &vp : get_enabled_parts( "REAPER" ) ) {
         const tripoint_bub_ms reaper_pos = vp.pos_bub( here );
-        int plant_produced = rng( 1, vp.info().bonus );
+        int plant_produced = std::max( 1, static_cast<int>( rng( 1, vp.info().bonus ) *
+                                       ::get_option<float>( "CROP_HARVEST_MULTIPLIER" ) ) );
         int seed_produced = rng( 1, 3 );
         const units::volume max_pickup_volume = vp.info().size / 20;
         here.grow_plant( reaper_pos );

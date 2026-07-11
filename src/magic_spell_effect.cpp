@@ -59,6 +59,7 @@
 #include "monstergenerator.h"
 #include "mtype.h"
 #include "npc.h"
+#include "options.h"
 #include "overmapbuffer.h"
 #include "pickup.h"
 #include "pimpl.h"
@@ -1486,20 +1487,27 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
             continue;
         }
 
-        // Reduce the amount of time until maturity by the spell's damage
-        // (1% per damage point) relative to season length.
-        const time_duration fertilizerEpoch = calendar::season_length() * ( static_cast<float>( sp.damage(
-                caster ) ) / 100.0f );
-
         const furn_t &furn = here.furn( tile ).obj();
-        const float growth_multiplier = furn.plant ? furn.plant->growth_multiplier : 1.0f;
+        if( furn.plant == nullptr || synced_seed->type == nullptr ||
+            synced_seed->type->seed == nullptr ) {
+            continue;
+        }
+        const float growth_multiplier = furn.plant->growth_multiplier;
+        const float crop_growth_speed = ::get_option<float>( "CROP_GROWTH_SPEED" );
         const time_duration current_effective = iexamine::get_plant_effective_growth_time(
                     *synced_seed, growth_multiplier );
-        const time_duration new_effective = current_effective + fertilizerEpoch;
 
-        iexamine::set_plant_effective_growth_turns( *synced_seed,
-                to_turns<int>( new_effective ) );
-        synced_seed->set_birthday( calendar::turn - new_effective / growth_multiplier );
+        // Spell fertilization advances the plant by a fixed percentage of its
+        // total growth duration, independent of the world crop growth speed option.
+        const std::vector<time_duration> &thresholds =
+            synced_seed->type->seed->get_cumulative_stage_thresholds();
+        const time_duration total_growth_time = thresholds.empty() ? 0_seconds : thresholds.back();
+        const float advance_pct = static_cast<float>( sp.damage( caster ) ) / 100.0f;
+        const time_duration advance = total_growth_time * advance_pct;
+        const time_duration new_effective = current_effective + advance;
+
+        iexamine::set_plant_effective_growth_time( *synced_seed, new_effective,
+                growth_multiplier, crop_growth_speed );
 
         // Apply any stage advances immediately.
         here.grow_plant( tile );
@@ -1510,7 +1518,7 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
             const furn_str_id furn_id = here.furn( tile ).id();
             get_event_bus().send<event_type::character_fertilizes_plant>(
                 planter->getID(), here.get_abs( tile ).raw(), synced_seed->typeId(), furn_id,
-                itype_fertilizer, to_turns<int>( fertilizerEpoch ) );
+                itype_fertilizer, to_turns<int>( advance ) );
 
             const int stage_idx = iexamine::get_plant_current_stage_idx_from_effective( here, tile );
             const std::string stage = stage_idx >= 0 ?
@@ -1519,7 +1527,7 @@ void spell_effect::fertilize_plant( const spell &sp, Creature &caster,
                 { "fertilizer_id", itype_fertilizer.str() }
             };
             const std::map<std::string, double> num_ctx = {
-                { "reduction_turns", static_cast<double>( to_turns<int>( fertilizerEpoch ) ) },
+                { "reduction_turns", static_cast<double>( to_turns<int>( advance ) ) },
                 { "actor_is_npc", planter->is_npc() ? 1.0 : 0.0 }
             };
             if( furn.plant ) {

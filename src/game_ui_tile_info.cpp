@@ -343,14 +343,25 @@ void game::print_furniture_info( const tripoint_bub_ms &lp, const catacurses::wi
         }
     }
 
-    // Show irrigation status for plantable furniture
+    // Show plant age and irrigation status for plantable furniture.
     if( f->plant ) {
         here.grow_plant( lp );
+
         const std::string water_desc = iexamine::plant_water_description( here, lp );
         if( !water_desc.empty() ) {
+            // Irrigated planters already include age inside the water description.
             for( const std::string &water_line : string_split( water_desc, '\n' ) ) {
                 fold_and_print( w_look, point( column, ++line ), max_width, c_light_gray,
                                 water_line );
+            }
+        } else {
+            // Non-irrigated farm plots have no water info, so print age on its own.
+            item *seed = iexamine::get_seed_at( here, lp );
+            if( seed != nullptr ) {
+                const std::string age_desc = iexamine::plant_age_description( *seed,
+                                              f->plant->growth_multiplier );
+                fold_and_print( w_look, point( column, ++line ), max_width, c_light_gray,
+                                age_desc );
             }
         }
     }

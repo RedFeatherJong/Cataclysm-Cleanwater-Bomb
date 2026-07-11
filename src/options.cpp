@@ -3175,6 +3175,35 @@ void options_manager::add_options_world_default()
              "a reasonable pace." ),
          true
        );
+
+    add_empty_line();
+
+    add_option_group( "world_default", Group( "crop_opts", to_translation( "Crop options" ),
+                      to_translation( "Options regarding crop growth, harvest yield and water consumption." ) ),
+    [&]( const std::string & page_id ) {
+        add( "CROP_GROWTH_SPEED", page_id, to_translation( "Crop growth speed" ),
+             to_translation( "Multiplier for crop growth speed.  Higher values make crops grow faster." ),
+             0.1f, 10.0f, 1.0f, 0.1f, COPT_NO_HIDE, "%.1f"
+           );
+
+        add( "CROP_HARVEST_MULTIPLIER", page_id, to_translation( "Crop harvest yield" ),
+             to_translation( "Multiplier for the number of crops harvested from a plant." ),
+             0.1f, 10.0f, 1.0f, 0.1f, COPT_NO_HIDE, "%.1f"
+           );
+
+        add( "CROP_WATER_CONSUMPTION", page_id, to_translation( "Crop water consumption" ),
+             to_translation( "Multiplier for daily water consumption of irrigated crops.  "
+                              "Higher values make crops thirstier." ),
+             0.1f, 10.0f, 1.0f, 0.1f, COPT_NO_HIDE, "%.1f"
+           );
+
+        add( "CROP_OVERGROWN_ENABLED", page_id,
+             to_translation( "Crops can wither from overgrowth" ),
+             to_translation( "If true, mature crops will eventually become overgrown and "
+                              "wither if not harvested." ),
+             true
+           );
+    } );
 }
 
 void options_manager::add_options_debug()

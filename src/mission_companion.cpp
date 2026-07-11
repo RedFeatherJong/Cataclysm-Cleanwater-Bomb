@@ -56,6 +56,7 @@
 #include "math_parser_diag_value.h"
 #include "memory_fast.h"
 #include "messages.h"
+#include "options.h"
 #include "monster.h"
 #include "mtype.h"
 #include "npc.h"
@@ -1746,8 +1747,9 @@ void talk_function::field_harvest( npc &p, const std::string &place )
                     number_plots++;
 
                     int plant_count = rng( skillLevel / 2, skillLevel );
-                    plant_count *= bay.furn( plot )->plant->harvest_multiplier;
-                    plant_count = std::min( std::max( plant_count, 1 ), 12 );
+                    plant_count *= bay.furn( plot )->plant->harvest_multiplier *
+                                   ::get_option<float>( "CROP_HARVEST_MULTIPLIER" );
+                    plant_count = std::max( plant_count, 1 );
                     const int seed_cnt = std::max( 1, rng( plant_count / 4, plant_count / 2 ) );
 
                     const tripoint_bub_ms bub_plot = bay_map->get_bub( bay.get_abs( plot ) );

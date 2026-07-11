@@ -352,9 +352,54 @@ const std::vector<std::pair<flag_id, time_duration>> &islot_seed::get_growth_sta
     return growth_stages;
 }
 
+const std::vector<time_duration> &islot_seed::get_cumulative_stage_thresholds() const
+{
+    return cumulative_stage_thresholds;
+}
+
+int islot_seed::get_mature_stage_idx() const
+{
+    return mature_stage_idx;
+}
+
+int islot_seed::get_harvest_stage_idx() const
+{
+    return harvest_stage_idx;
+}
+
+int islot_seed::get_overgrown_stage_idx() const
+{
+    return overgrown_stage_idx;
+}
+
 units::temperature islot_seed::get_growth_temp() const
 {
     return growth_temp;
+}
+
+void islot_seed::finalize()
+{
+    cumulative_stage_thresholds.clear();
+    cumulative_stage_thresholds.reserve( growth_stages.size() );
+    time_duration acc = 0_seconds;
+    for( const auto &stage : growth_stages ) {
+        acc += stage.second;
+        cumulative_stage_thresholds.push_back( acc );
+    }
+
+    mature_stage_idx = -1;
+    harvest_stage_idx = -1;
+    overgrown_stage_idx = -1;
+    for( int i = 0; i < static_cast<int>( growth_stages.size() ); ++i ) {
+        const std::string &flag = growth_stages[i].first.str();
+        if( flag == "GROWTH_MATURE" ) {
+            mature_stage_idx = i;
+        } else if( flag == "GROWTH_HARVEST" ) {
+            harvest_stage_idx = i;
+        } else if( flag == "GROWTH_OVERGROWN" ) {
+            overgrown_stage_idx = i;
+        }
+    }
 }
 
 int islot_armor::avg_env_resist() const
