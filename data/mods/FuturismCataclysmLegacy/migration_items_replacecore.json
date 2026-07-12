@@ -48,5 +48,45 @@
     "id": "medium_atomic_battery_cell",
     "type": "MIGRATION",
     "replace": "fcl_medium_atomic_battery_cell"
+  },
+  {
+    "id": [ "bot_eyebot" ],
+    "type": "MIGRATION",
+    "replace": "fcl_bot_eyebot"
+  },
+  {
+    "id": [ "broken_eyebot" ],
+    "type": "MIGRATION",
+    "replace": "broken_fcl_eyebot"
+  },
+  {
+    "id": [ "bot_copbot" ],
+    "type": "MIGRATION",
+    "replace": "fcl_bot_copbot"
+  },
+  {
+    "id": [ "broken_copbot" ],
+    "type": "MIGRATION",
+    "replace": "broken_fcl_copbot"
+  },
+  {
+    "id": [ "bot_molebot" ],
+    "type": "MIGRATION",
+    "replace": "fcl_bot_molebot"
+  },
+  {
+    "id": [ "broken_molebot" ],
+    "type": "MIGRATION",
+    "replace": "broken_fcl_molebot"
+  },
+  {
+    "id": [ "bot_riotbot" ],
+    "type": "MIGRATION",
+    "replace": "fcl_bot_riotbot"
+  },
+  {
+    "id": [ "broken_riotbot" ],
+    "type": "MIGRATION",
+    "replace": "broken_fcl_riotbot"
   }
 ]
