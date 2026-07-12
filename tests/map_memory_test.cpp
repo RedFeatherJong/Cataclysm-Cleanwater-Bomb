@@ -3,13 +3,21 @@
 #include <sstream>
 #include <string>
 
+#include "avatar.h"
+#include "calendar.h"
 #include "cata_catch.h"
 #include "coordinates.h"
+#include "game.h"
 #include "lru_cache.h"
 #include "map.h"
+#include "map_helpers.h"
 #include "map_memory.h"
 #include "map_scale_constants.h"
+#include "options_helpers.h"
+#include "player_helpers.h"
 #include "point.h"
+#include "type_id.h"
+#include "weather_type.h"
 
 static constexpr tripoint_abs_ms p1{ -SEEX - 2, -SEEY - 3, -1 };
 static constexpr tripoint_abs_ms p2{ 5, 7, -1 };
@@ -120,6 +128,41 @@ TEST_CASE( "map_memory_forgets", "[map_memory]" )
     CHECK( mt.get_dec_id().empty() );
     CHECK( mt.get_dec_subtile() == 0 );
     CHECK( mt.get_dec_rotation() == 0 );
+}
+
+TEST_CASE( "map_memory_refreshes_visibility_after_avatar_moves", "[map_memory][vision]" )
+{
+    clear_map_without_vision();
+    clear_avatar();
+    scoped_weather_override weather_clear( WEATHER_CLEAR );
+    calendar::turn = calendar::turn_zero;
+
+    map &here = get_map();
+    avatar &you = get_avatar();
+    const tripoint_bub_ms start( 50, 50, 0 );
+    const tripoint_bub_ms destination = start + tripoint::east * 20;
+    const tripoint_abs_ms destination_abs = here.get_abs( destination );
+    const ter_str_id floor( "t_floor" );
+
+    g->place_player( start );
+    you.clear_map_memory();
+    you.recalc_sight_limits();
+    REQUIRE( here.ter_set( destination, floor ) );
+
+    // Establish a valid visibility cache at the old position.  At midnight,
+    // the destination is beyond the avatar's unaided vision.
+    here.invalidate_map_cache( start.z() );
+    here.build_map_cache( start.z() );
+    here.invalidate_visibility_cache();
+    here.update_visibility_cache( start.z() );
+    CHECK_FALSE( you.has_memory_at( destination_abs ) );
+
+    // Vehicle movement and the last step of a turn can move the avatar without
+    // rendering a frame.  update_map_memory must refresh visibility itself.
+    you.setpos( here, destination, false );
+    here.update_map_memory( you );
+
+    CHECK( you.get_memorized_tile( destination_abs ).get_ter_id() == floor.str() );
 }
 
 // TODO: map memory save / load

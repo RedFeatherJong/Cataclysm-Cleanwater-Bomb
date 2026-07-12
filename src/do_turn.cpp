@@ -1054,8 +1054,11 @@ void game::simulate_turn_suffix()
     // / crafting) — the same condition that triggers handle_progress_ui's
     // wait popup.  During those the player cannot see the world, so per-turn
     // memorisation is pure waste and the source of the stutter.
+    // Autodrive uses the progress UI too, but unlike reading/crafting it moves
+    // the avatar through a visible world and must keep recording map memory.
     const bool in_long_wait = u.has_effect( effect_sleep ) ||
-                              static_cast<bool>( u.activity.get_progress_message( u ) );
+                              ( u.activity.id() != ACT_AUTODRIVE &&
+                                static_cast<bool>( u.activity.get_progress_message( u ) ) );
     if( !in_long_wait ) {
         m.update_map_memory( u );
     }
