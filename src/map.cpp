@@ -625,6 +625,16 @@ void map::update_map_memory( avatar &you )
 {
     ZoneScoped;
     map &here = *this;
+    const int z = you.posz();
+
+    // Map memory must use visibility from the avatar's current position.  The
+    // final step of ordinary movement and activity-driven vehicle movement can
+    // both happen without an intervening render, leaving this cache at the
+    // previous position.  Refresh it here so simulation-side memory never
+    // depends on whether a frame happened to be drawn.
+    here.build_map_cache( z );
+    here.update_visibility_cache( z );
+
     const visibility_variables &cache = here.get_visibility_variables_cache();
     const tripoint_bub_ms you_pos = you.pos_bub( here );
     // Limit the update area to the maximum view range, matching the render-path
@@ -632,7 +642,6 @@ void map::update_map_memory( avatar &you )
     const point min_visible( you_pos.x() % SEEX, you_pos.y() % SEEY );
     const point max_visible( ( you_pos.x() % SEEX ) + ( MAPSIZE - 1 ) * SEEX,
                              ( you_pos.y() % SEEY ) + ( MAPSIZE - 1 ) * SEEY );
-    const int z = you.posz();
     const level_cache &ch = here.access_cache( z );
 
     // Ensure the player's map-memory cache covers the window this pass is about
