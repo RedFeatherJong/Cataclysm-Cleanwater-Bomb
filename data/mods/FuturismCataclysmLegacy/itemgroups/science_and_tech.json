@@ -1,0 +1,15 @@
+[
+  {
+    "type": "item_group",
+    "id": "schematics",
+    "copy-from": "schematics",
+    "extend": {
+      "items": [
+        [ "schematics_copbot", 50 ],
+        [ "schematics_eyebot", 50 ],
+        [ "schematics_riotbot", 50 ],
+        [ "schematics_molebot", 20 ]
+      ]
+    }
+  }
+]
