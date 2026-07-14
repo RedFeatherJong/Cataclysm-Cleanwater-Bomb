@@ -48,6 +48,7 @@
         { "group": "swimmer_set_any", "x": 11, "y": 8, "chance": 75, "repeat": [ 1, 4 ] },
         { "group": "cleaning", "x": [ 11, 12 ], "y": 9, "chance": 70, "repeat": [ 1, 2 ] },
         { "group": "surgery", "x": [ 8, 9 ], "y": 9, "chance": 70, "repeat": [ 1, 2 ] },
+        { "group": "drugs_morphine", "x": [ 8, 9 ], "y": 9, "chance": 100, "repeat": [ 1, 2 ] },
         { "group": "bionics_retail", "x": [ 3, 5 ], "y": 9, "chance": 100 },
         { "group": "bionics_retail", "x": [ 3, 5 ], "y": 9, "chance": 50 },
         { "item": "television", "x": 21, "y": 16, "chance": 95 },
