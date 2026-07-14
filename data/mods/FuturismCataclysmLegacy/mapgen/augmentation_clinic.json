@@ -54,7 +54,7 @@
     "object": {
       "fill_ter": "t_strconc_floor",
       "rows": [
-        "                   ,,   ",
+        "                 ∑ ,,   ",
         "                   ,,   ",
         " -ó-----------    |,,|  ",
         " -.--0.H%%H.0-     ,,   ",
@@ -107,7 +107,10 @@
         ],
         "?": { "item": "autodoc_supplies", "chance": 100 }
       },
-      "monster": { "ö": { "monster": "mon_skitterbot" } },
+      "monster": {
+        "ö": { "monster": "mon_skitterbot" },
+        "∑": { "monster": "mon_zombie_static" }
+      },
       "vendingmachines": { "V": { "item_group": "fcl_vending_medicine", "reinforced": true } }
     }
   },

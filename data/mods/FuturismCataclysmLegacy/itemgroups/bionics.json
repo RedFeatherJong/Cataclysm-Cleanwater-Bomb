@@ -51,6 +51,10 @@
   {
     "id": "fcl_bionics_power",
     "type": "item_group",
-    "items": [ [ "bio_power_storage_mkII", 1 ], [ "bio_power_storage", 14 ], [ "bio_betavoltaic", 5 ] ]
+    "items": [
+      [ "bio_power_storage_mkII", 1 ],
+      [ "bio_power_storage", 14 ],
+      [ "bio_betavoltaic", 5 ]
+    ]
   }
 ]
