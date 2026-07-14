@@ -176,7 +176,7 @@
       },
       "monster": {
         "ö": { "monster": "mon_skitterbot" },
-        "∑": [ { "monster": "mon_nursebot_defective" } ]
+        "∑": [ { "monster": "mon_nursebot" } ]
       },
       "vehicles": {
         "]": { "vehicle": "hospital_bed", "rotation": 180 },
