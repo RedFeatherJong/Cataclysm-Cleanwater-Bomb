@@ -717,7 +717,7 @@
     "category": "spare_parts",
     "price": "0 cent",
     "price_postapoc": "0 cent",
-    "name": { "str": "down feather" },
+    "name": { "str": "down feather clump" },
     "symbol": "=",
     "color": "brown",
     "description": "A clump of fluffy down feathers from a bird.  Useful for making cosy bedclothes.",
