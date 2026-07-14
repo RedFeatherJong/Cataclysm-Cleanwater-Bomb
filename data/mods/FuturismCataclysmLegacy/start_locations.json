@@ -9,5 +9,11 @@
         "house_09b"
       ]
     }
+  },
+  {
+    "type": "start_location",
+    "id": "sloc_fcl_augmentation_clinic_n3",
+    "name": "Augclinic",
+    "terrain": [ "fcl_augmentation_clinic_n3" ]
   }
 ]
