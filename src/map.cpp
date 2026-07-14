@@ -633,6 +633,7 @@ void map::update_map_memory( avatar &you )
     // previous position.  Refresh it here so simulation-side memory never
     // depends on whether a frame happened to be drawn.
     here.build_map_cache( z );
+    here.invalidate_visibility_cache();
     here.update_visibility_cache( z );
 
     const visibility_variables &cache = here.get_visibility_variables_cache();

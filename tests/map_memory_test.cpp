@@ -165,6 +165,54 @@ TEST_CASE( "map_memory_refreshes_visibility_after_avatar_moves", "[map_memory][v
     CHECK( you.get_memorized_tile( destination_abs ).get_ter_id() == floor.str() );
 }
 
+TEST_CASE( "map_memory_refreshes_visibility_after_transparency_changes", "[map_memory][vision]" )
+{
+    clear_map_without_vision();
+    clear_avatar();
+    scoped_weather_override weather_clear( WEATHER_CLEAR );
+    calendar::turn = calendar::turn_zero + 12_hours;
+
+    map &here = get_map();
+    avatar &you = get_avatar();
+    const tripoint_bub_ms requested_start( 50, 50, 0 );
+    const ter_str_id floor( "t_floor" );
+    const ter_str_id wall( "t_wall" );
+
+    g->place_player( requested_start );
+    const tripoint_bub_ms start = you.pos_bub( here );
+    const tripoint_bub_ms blocker = start + tripoint::east;
+    const tripoint_bub_ms target = start + tripoint::east * 10;
+    const tripoint_abs_ms target_abs = here.get_abs( target );
+    you.clear_map_memory();
+    g->reset_light_level();
+    you.recalc_sight_limits();
+    REQUIRE( here.ter_set( blocker, wall ) );
+    REQUIRE( here.ter_set( target, floor ) );
+
+    here.invalidate_map_cache( start.z() );
+    here.build_map_cache( start.z() );
+    here.invalidate_visibility_cache();
+    here.update_visibility_cache( start.z() );
+
+    const auto target_is_clear = [&]() {
+        const level_cache &cache = here.access_cache( target.z() );
+        return here.get_visibility( cache.visibility_cache[target.x()][target.y()],
+                                    here.get_visibility_variables_cache() ) == visibility_type::CLEAR;
+    };
+
+    REQUIRE_FALSE( target_is_clear() );
+    CHECK_FALSE( you.has_memory_at( target_abs ) );
+
+    // Opening a door or curtains changes transparency without moving the
+    // avatar.  The derived visibility cache must be refreshed before map
+    // memory is recorded at the end of the action.
+    REQUIRE( here.ter_set( blocker, floor ) );
+    here.update_map_memory( you );
+
+    CHECK( target_is_clear() );
+    CHECK( you.get_memorized_tile( target_abs ).get_ter_id() == floor.str() );
+}
+
 // TODO: map memory save / load
 
 #include <chrono>
