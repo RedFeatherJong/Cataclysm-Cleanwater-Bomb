@@ -8,7 +8,7 @@
 */
 
 #ifndef WIN32STDTHREAD_H
-#ifndef __GLIBCXX_HAS_GTHREADS
+#ifndef _GLIBCXX_HAS_GTHREADS
 
 #define WIN32STDTHREAD_H
 #define _GLIBCXX_THREAD 1
@@ -54,7 +54,7 @@ class thread
             return mHandle;
         }
         thread(): mHandle( _STD_THREAD_INVALID_HANDLE ) {}
-        thread( thread & other )
+        thread( thread &other )
             : mHandle( other.mHandle ), mThreadId( other.mThreadId ) {
             other.mHandle = _STD_THREAD_INVALID_HANDLE;
             other.mThreadId.clear();
@@ -76,8 +76,8 @@ class thread
         bool joinable() const {
             return mHandle != _STD_THREAD_INVALID_HANDLE;
         }
-        void join() const {
-            if( get_id() == GetCurrentThreadId() ) {
+        void join() {
+            if( get_id() == id( GetCurrentThreadId() ) ) {
                 throw system_error( EDEADLK, generic_category() );
             }
             if( mHandle == _STD_THREAD_INVALID_HANDLE ) {
@@ -112,7 +112,7 @@ class thread
         static unsigned int hardware_concurrency() noexcept {
             return 1;
         }
-        void detach() const {
+        void detach() {
             if( !joinable() ) {
                 throw system_error();
             }
@@ -143,5 +143,5 @@ void sleep_until( const std::chrono::time_point<Clock, Duration> &sleep_time )
 } // namespace this_thread
 
 } // namespace std
-#endif // __GLIBCXX_THREAD
+#endif // _GLIBCXX_HAS_GTHREADS
 #endif // WIN32STDTHREAD_H
