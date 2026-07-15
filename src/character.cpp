@@ -143,7 +143,7 @@ static const addiction_id addiction_sleeping_pill( "sleeping pill" );
 static const anatomy_id anatomy_human_anatomy( "human_anatomy" );
 
 static const bionic_id bio_ods( "bio_ods" );
-static const bionic_id bio_railgun( "bio_railgun" );
+static const bionic_id fcl_bio_railgun( "fcl_bio_railgun" );
 static const bionic_id bio_shock_absorber( "bio_shock_absorber" );
 static const bionic_id bio_sleep_shutdown( "bio_sleep_shutdown" );
 static const bionic_id bio_soporific( "bio_soporific" );
@@ -3711,7 +3711,7 @@ int Character::throw_range( const item &it ) const
     int str = get_arm_str() + ench_bonus;
     int attr_int = get_int();
 
-    const bool do_railgun = has_active_bionic( bio_railgun ) && tmp.made_of_any( ferric );
+    const bool do_railgun = has_active_bionic( fcl_bio_railgun ) && tmp.made_of_any( ferric );
 
     /** @ARM_STR determines maximum weight that can be thrown */
     if( ( tmp.weight() / 113_gram ) > str * 15 )  {

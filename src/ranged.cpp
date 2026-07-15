@@ -133,7 +133,7 @@ static const ammotype ammo_m235( "m235" );
 static const ammotype ammo_metal_rail( "metal_rail" );
 static const ammotype ammo_strange_arrow( "strange_arrow" );
 
-static const bionic_id bio_railgun( "bio_railgun" );
+static const bionic_id fcl_bio_railgun( "fcl_bio_railgun" );
 
 static const character_modifier_id
 character_modifier_melee_thrown_move_balance_mod( "melee_thrown_move_balance_mod" );
@@ -1580,7 +1580,7 @@ static double thrown_item_weight_damage( const Character &thrower, const item &t
                                   + 0.03f * std::max( 0, dex - 8 );
 
     // When using bionic railgun, it is not considered a normal throw; a special algorithm is employed.
-    bool do_railgun = thrower.has_active_bionic( bio_railgun ) && thrown.made_of_any( ferric );
+    bool do_railgun = thrower.has_active_bionic( fcl_bio_railgun ) && thrown.made_of_any( ferric );
     if( do_railgun && thrower.is_mounted() ) {
         auto *mons = thrower.mounted_creature.get();
         if( mons->mech_str_addition() != 0 ) {
@@ -1610,7 +1610,7 @@ static double thrown_item_weight_damage( const Character &thrower, const item &t
 int Character::thrown_item_adjusted_damage( const item &thrown ) const
 {
     const std::optional<int> throw_assist = character_throw_assist( *this );
-    const bool do_railgun = has_active_bionic( bio_railgun ) && thrown.made_of_any( ferric ) &&
+    const bool do_railgun = has_active_bionic( fcl_bio_railgun ) && thrown.made_of_any( ferric ) &&
                             !throw_assist;
 
     // The damage dealt due to item's weight, player's strength, and skill level
@@ -1699,7 +1699,7 @@ dealt_projectile_attack Character::throw_item( const tripoint_bub_ms &target, co
         proj.critical_multiplier += 0.06f * std::min( dex, per );
     }
 
-    const bool do_railgun = has_active_bionic( bio_railgun ) && thrown.made_of_any( ferric ) &&
+    const bool do_railgun = has_active_bionic( fcl_bio_railgun ) && thrown.made_of_any( ferric ) &&
                             !throw_assist;
 
     impact.add_damage( damage_bash, thrown_item_weight_damage( *this, thrown ) );
@@ -1743,7 +1743,7 @@ dealt_projectile_attack Character::throw_item( const tripoint_bub_ms &target, co
     if( do_railgun ) {
         proj_effects.insert( ammo_effect_LIGHTNING );
 
-        const units::energy trigger_cost = bio_railgun->power_trigger;
+        const units::energy trigger_cost = fcl_bio_railgun->power_trigger;
         mod_power_level( -trigger_cost );
     }
 
