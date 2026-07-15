@@ -3,6 +3,7 @@
     "id": "bubble_car",
     "type": "vehicle",
     "name": "Bubble Car",
+    "color_palette": "car_standard",
     "blueprint": [
       [ " --- " ],
       [ "+o#o-" ],
@@ -57,6 +58,7 @@
     "type": "vehicle",
     "//": "This definition is here for regression testing, do not move.",
     "name": "Atomic Sports Car",
+    "color_palette": "limo_standard",
     "blueprint": [
       [ "o--+-o" ],
       [ "=>'#'|" ],
@@ -110,6 +112,7 @@
     "id": "compact_atomic",
     "type": "vehicle",
     "name": "Atomic Compact",
+    "color_palette": "car_standard",
     "blueprint": [
       [ "o-+-" ],
       [ "=##o" ],
@@ -146,6 +149,7 @@
     "id": "suv_atomic",
     "type": "vehicle",
     "name": "Atomic SUV",
+    "color_palette": "limo_standard",
     "blueprint": [
       [ "o-++-o" ],
       [ "+=##'|" ],
@@ -207,6 +211,7 @@
     "id": "car_atomic",
     "type": "vehicle",
     "name": "Atomic Car",
+    "color_palette": "car_standard",
     "blueprint": [
       [ "o-++-o" ],
       [ "+=##'|" ],
