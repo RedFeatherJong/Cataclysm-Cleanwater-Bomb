@@ -403,8 +403,8 @@ void monmove()
 
         if( cata_mp::is_hosting() ) {
             const int mon_ms = static_cast<int>(
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - mon_t0 ).count() );
+                                   std::chrono::duration_cast<std::chrono::milliseconds>(
+                                       std::chrono::steady_clock::now() - mon_t0 ).count() );
             if( mon_ms >= 10 ) {
                 mon_slow_log += " " + critter.type->id.str() + "=" + std::to_string( mon_ms ) + "ms";
             }
@@ -476,8 +476,8 @@ void monmove()
 
         if( cata_mp::is_hosting() ) {
             const int npc_ms = static_cast<int>(
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - npc_t0 ).count() );
+                                   std::chrono::duration_cast<std::chrono::milliseconds>(
+                                       std::chrono::steady_clock::now() - npc_t0 ).count() );
             if( npc_ms >= 10 ) {
                 cata_mp::mp_log( "[cdda-mp] monmove slow NPC: " + guy.get_name() +
                                  " activity=" + guy.activity.id().str() +
@@ -587,12 +587,14 @@ void game::handle_progress_ui()
         static auto s_last_ff_redraw = std::chrono::steady_clock::time_point {};
         const bool ff_active = cata_mp::should_fast_forward();
         const bool ff_redraw_due = [&] {
-            if( !ff_active ) {
+            if( !ff_active )
+            {
                 return false;
             }
             const auto now = std::chrono::steady_clock::now();
             if( first_redraw_since_waiting_started ||
-                std::chrono::duration_cast<std::chrono::milliseconds>( now - s_last_ff_redraw ).count() >= 100 ) {
+                std::chrono::duration_cast<std::chrono::milliseconds>( now - s_last_ff_redraw ).count() >= 100 )
+            {
                 s_last_ff_redraw = now;
                 return true;
             }
@@ -924,7 +926,7 @@ bool game::do_avatar_action_loop()
             const bool moves_consumed = pre_act_moves > 0 && u.get_moves() <= 0;
             if( cata_mp::is_client_mode() && activity_just_ended ) {
                 const std::string ended_id = pre_act_had_activity ? u.activity ?
-                    activity_id::NULL_ID().str() : "" : post_loop_act;
+                                             activity_id::NULL_ID().str() : "" : post_loop_act;
                 cata_mp::set_client_turn_activity( std::string() );
                 if( !ended_id.empty() ) {
                     cata_mp::client_send_activity_end( ended_id );

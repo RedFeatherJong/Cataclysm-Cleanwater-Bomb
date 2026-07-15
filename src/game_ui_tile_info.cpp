@@ -359,7 +359,7 @@ void game::print_furniture_info( const tripoint_bub_ms &lp, const catacurses::wi
             item *seed = iexamine::get_seed_at( here, lp );
             if( seed != nullptr ) {
                 const std::string age_desc = iexamine::plant_age_description( *seed,
-                                              f->plant->growth_multiplier );
+                                             f->plant->growth_multiplier );
                 fold_and_print( w_look, point( column, ++line ), max_width, c_light_gray,
                                 age_desc );
             }

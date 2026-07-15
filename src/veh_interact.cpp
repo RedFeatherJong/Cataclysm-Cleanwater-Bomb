@@ -2792,7 +2792,7 @@ void veh_interact::display_mode( const map &here )
                               task_reason::CAN_DO ),
             }
         };
-        std::array<int, action_cnt + 1> pos;
+        std::array < int, action_cnt + 1 > pos;
         pos[0] = 0;
         for( size_t i = 0; i < action_cnt; ++i ) {
             pos[i + 1] = pos[i] + utf8_width( actions[i], true );

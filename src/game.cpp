@@ -165,8 +165,8 @@
 #include "monstergenerator.h"
 #include "move_mode.h"
 #ifdef MP_ENABLED
-#include "mp_client_conn.h"
-#include "mp_gamestate.h"
+    #include "mp_client_conn.h"
+    #include "mp_gamestate.h"
 #endif
 #include "mtype.h"
 #include "npc.h"
@@ -5478,7 +5478,7 @@ bool game::npc_menu( npc &who )
             if( mp_partner ) {
                 add_msg( _( "You swap places with %s." ), who.get_name() );
                 cata_mp::client_send( cata_mp::client_enrich_action(
-                    R"({"type":"action","action":"swap_with_partner"})" ) );
+                                          R"({"type":"action","action":"swap_with_partner"})" ) );
                 cata_mp::client_mark_action_sent();
                 u.mod_moves( -200 );
             } else {
@@ -5511,7 +5511,7 @@ bool game::npc_menu( npc &who )
         if( mp_partner ) {
             add_msg( _( "You push %s." ), who.get_name() );
             cata_mp::client_send( cata_mp::client_enrich_action(
-                R"({"type":"action","action":"push_partner"})" ) );
+                                      R"({"type":"action","action":"push_partner"})" ) );
             cata_mp::client_mark_action_sent();
             u.mod_moves( -20 );
         } else {

@@ -45,8 +45,8 @@
 #include "mapsharing.h"
 #include "messages.h"
 #ifdef MP_ENABLED
-#include "mp_client_conn.h"
-#include "mp_gamestate.h"
+    #include "mp_client_conn.h"
+    #include "mp_gamestate.h"
 #endif
 #include "music.h"
 #include "options.h"
@@ -1016,7 +1016,8 @@ bool main_menu::opening_screen()
                         cpick.entries.emplace_back( RET_RANDOM, true, 'r', _( "Random Character" ) );
                         cpick.entries.emplace_back( RET_CANCEL, true, 'q', _( "Cancel" ) );
                         cpick.query();
-                        switch( cpick.ret ) {
+                        switch( cpick.ret )
+                        {
                             case RET_CUSTOM:
                                 return 0;
                             case RET_PRESET:
@@ -1144,7 +1145,8 @@ bool main_menu::opening_screen()
                             break;
                         }
                         const bool any_worlds_with_saves = [] {
-                            for( const auto &kv : world_generator->get_all_worlds() ) {
+                            for( const auto &kv : world_generator->get_all_worlds() )
+                            {
                                 if( !kv.second->world_saves.empty() ) {
                                     return true;
                                 }

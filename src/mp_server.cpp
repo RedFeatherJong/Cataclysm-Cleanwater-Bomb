@@ -16,7 +16,8 @@
 
 using asio::ip::tcp;
 
-namespace cata_mp {
+namespace cata_mp
+{
 
 // Forward-declared (not #included) on purpose: pulling mp_gamestate.h into this
 // TU drags in CDDA's enum_traits.h, whose generic operator++ collides with
@@ -101,76 +102,76 @@ static std::string mp_compress_frame( const std::string &msg )
 // ---------------------------------------------------------------------------
 
 struct client_session : public std::enable_shared_from_this<client_session> {
-    tcp::socket socket;
-    asio::streambuf read_buf;
-    std::string name;
-    bool authenticated = false;
+        tcp::socket socket;
+        asio::streambuf read_buf;
+        std::string name;
+        bool authenticated = false;
 
-    std::function<void( std::shared_ptr<client_session>, const std::string & )> on_message;
-    std::function<void( std::shared_ptr<client_session> )> on_disconnect;
+        std::function<void( std::shared_ptr<client_session>, const std::string & )> on_message;
+        std::function<void( std::shared_ptr<client_session> )> on_disconnect;
 
-    // Outgoing write queue — only one async_write may be in flight at a time.
-    // All send() / do_write() calls happen on the single Asio thread so no mutex needed.
-    std::deque<std::string> write_queue_;
-    bool writing_ = false;
+        // Outgoing write queue — only one async_write may be in flight at a time.
+        // All send() / do_write() calls happen on the single Asio thread so no mutex needed.
+        std::deque<std::string> write_queue_;
+        bool writing_ = false;
 
-    explicit client_session( tcp::socket sock )
-        : socket( std::move( sock ) ) {}
+        explicit client_session( tcp::socket sock )
+            : socket( std::move( sock ) ) {}
 
-    void start() {
-        // Disable Nagle — see client_connect(). The host's grant packets are
-        // tiny and must not be batched on a high-latency link or the lockstep
-        // turn cycle wedges (works on LAN, hangs over the internet).
-        std::error_code nd_ec;
-        socket.set_option( tcp::no_delay( true ), nd_ec );
-        send( "{\"type\":\"hello\",\"protocol\":\"cdda-mp\",\"version\":\"0.1\"}\n" );
-        do_read();
-    }
-
-    void send( const std::string &msg ) {
-        write_queue_.push_back( mp_compress_frame( msg ) );
-        if( !writing_ ) {
-            do_write();
+        void start() {
+            // Disable Nagle — see client_connect(). The host's grant packets are
+            // tiny and must not be batched on a high-latency link or the lockstep
+            // turn cycle wedges (works on LAN, hangs over the internet).
+            std::error_code nd_ec;
+            socket.set_option( tcp::no_delay( true ), nd_ec );
+            send( "{\"type\":\"hello\",\"protocol\":\"cdda-mp\",\"version\":\"0.1\"}\n" );
+            do_read();
         }
-    }
 
-    void do_write() {
-        if( write_queue_.empty() ) {
-            writing_ = false;
-            return;
+        void send( const std::string &msg ) {
+            write_queue_.push_back( mp_compress_frame( msg ) );
+            if( !writing_ ) {
+                do_write();
+            }
         }
-        writing_ = true;
-        auto self = shared_from_this();
-        // Coalesce EVERY queued message into one buffer so N messages enqueued in
-        // a single turn become one write() / one batch of back-to-back segments,
-        // instead of N separate writes (with Nagle off, N tiny packets — the
-        // small-packet storm).  Each queued message already ends in '\n', so the
-        // client's newline-framed reader still splits them apart correctly, and an
-        // older non-coalescing client is unaffected (wire-compatible).  Messages
-        // posted during this async_write land back in write_queue_ and coalesce on
-        // the next pass.
-        auto buf = std::make_shared<std::string>();
-        for( const std::string &m : write_queue_ ) {
-            buf->append( m );
-        }
-        write_queue_.clear();
-        asio::async_write( socket, asio::buffer( *buf ),
-        [self, buf]( std::error_code ec, std::size_t ) {
-            if( ec ) {
-                self->disconnect();
+
+        void do_write() {
+            if( write_queue_.empty() ) {
+                writing_ = false;
                 return;
             }
-            self->do_write();
-        } );
-    }
-
-    void disconnect() {
-        std::error_code ec;
-        socket.close( ec );
-        if( on_disconnect ) {
-            on_disconnect( shared_from_this() );
+            writing_ = true;
+            auto self = shared_from_this();
+            // Coalesce EVERY queued message into one buffer so N messages enqueued in
+            // a single turn become one write() / one batch of back-to-back segments,
+            // instead of N separate writes (with Nagle off, N tiny packets — the
+            // small-packet storm).  Each queued message already ends in '\n', so the
+            // client's newline-framed reader still splits them apart correctly, and an
+            // older non-coalescing client is unaffected (wire-compatible).  Messages
+            // posted during this async_write land back in write_queue_ and coalesce on
+            // the next pass.
+            auto buf = std::make_shared<std::string>();
+            for( const std::string &m : write_queue_ ) {
+                buf->append( m );
+            }
+            write_queue_.clear();
+            asio::async_write( socket, asio::buffer( *buf ),
+            [self, buf]( std::error_code ec, std::size_t ) {
+                if( ec ) {
+                    self->disconnect();
+                    return;
+                }
+                self->do_write();
+            } );
         }
-    }
+
+        void disconnect() {
+            std::error_code ec;
+            socket.close( ec );
+            if( on_disconnect ) {
+                on_disconnect( shared_from_this() );
+            }
+        }
 
     private:
         void do_read() {
@@ -216,38 +217,45 @@ server::server( uint16_t port, std::string password, std::string version )
 
 server::~server() = default;
 
-void server::run() {
+void server::run()
+{
     std::cout << "[cdda-mp] Server listening on port " << port_ << std::endl;
     do_accept();
     impl_->io_ctx.run();
 }
 
-void server::stop() {
+void server::stop()
+{
     impl_->io_ctx.stop();
 }
 
-void server::broadcast( const std::string &msg ) {
+void server::broadcast( const std::string &msg )
+{
     std::scoped_lock lock( clients_mutex_ );
     for( auto &c : clients_ ) {
         c->send( msg );
     }
 }
 
-void server::post_broadcast( const std::string &msg ) {
-    asio::post( impl_->io_ctx, [this, msg]() { broadcast( msg ); } );
+void server::post_broadcast( const std::string &msg )
+{
+    asio::post( impl_->io_ctx, [this, msg]() {
+        broadcast( msg );
+    } );
 }
 
-void server::do_accept() {
+void server::do_accept()
+{
     impl_->acceptor.async_accept(
     [this]( std::error_code ec, tcp::socket socket ) {
         if( !ec ) {
             auto session = std::make_shared<client_session>( std::move( socket ) );
 
-            session->on_message = [this]( auto sess, const auto& msg ) {
-                on_message( std::move(sess), msg );
+            session->on_message = [this]( auto sess, const auto & msg ) {
+                on_message( std::move( sess ), msg );
             };
             session->on_disconnect = [this]( auto sess ) {
-                on_client_disconnected( std::move(sess) );
+                on_client_disconnected( std::move( sess ) );
             };
 
             on_client_connected( session );
@@ -257,7 +265,8 @@ void server::do_accept() {
     } );
 }
 
-void server::on_client_connected( const std::shared_ptr<client_session>& session ) {
+void server::on_client_connected( const std::shared_ptr<client_session> &session )
+{
     {
         std::scoped_lock lock( clients_mutex_ );
         clients_.push_back( session );
@@ -270,7 +279,8 @@ void server::on_client_connected( const std::shared_ptr<client_session>& session
     }
 }
 
-void server::on_client_disconnected( const std::shared_ptr<client_session>& session ) {
+void server::on_client_disconnected( const std::shared_ptr<client_session> &session )
+{
     {
         std::scoped_lock lock( clients_mutex_ );
         clients_.erase(
@@ -292,7 +302,9 @@ void server::on_client_disconnected( const std::shared_ptr<client_session>& sess
 // around the colon (handles both "key":"val" and "key": "val").
 static std::string json_get_str( const std::string &json, const std::string &key )
 {
-    for( const std::string &sep : { std::string( "\":\"" ), std::string( "\": \"" ) } ) {
+    for( const std::string &sep : {
+             std::string( "\":\"" ), std::string( "\": \"" )
+         } ) {
         std::string needle = "\"" + key + sep;
         auto pos = json.find( needle );
         if( pos != std::string::npos ) {
@@ -306,7 +318,8 @@ static std::string json_get_str( const std::string &json, const std::string &key
     return "";
 }
 
-void server::on_message( const std::shared_ptr<client_session>& session, const std::string &msg ) {
+void server::on_message( const std::shared_ptr<client_session> &session, const std::string &msg )
+{
     std::cout << "[cdda-mp] recv: " << msg << std::endl;
 
     const std::string type = json_get_str( msg, "type" );
@@ -455,7 +468,8 @@ bool is_server_thread_running()
     return server_thread_running_.load();
 }
 
-void run_server( uint16_t port, const std::string &password, const std::string &version ) {
+void run_server( uint16_t port, const std::string &password, const std::string &version )
+{
     server_thread_running_.store( true );
     try {
         // The server ctor binds the listen socket and THROWS if the port is

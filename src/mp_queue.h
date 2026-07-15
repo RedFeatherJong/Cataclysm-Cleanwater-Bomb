@@ -8,7 +8,8 @@
 #include <queue>
 #include <string>
 
-namespace cata_mp {
+namespace cata_mp
+{
 
 struct mp_event {
     enum class type {
@@ -21,7 +22,8 @@ struct mp_event {
     std::string data;  // JSON action string for type::action
 };
 
-class event_queue {
+class event_queue
+{
     public:
         void push( mp_event e ) {
             {

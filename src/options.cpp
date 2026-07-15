@@ -1329,7 +1329,7 @@ std::unordered_set<std::string> options_manager::get_langs_with_translation_file
 {
 #if defined(LOCALIZE)
     std::unordered_set<std::string> lang_list;
-    const auto add_langs_from = [&lang_list]( const std::string &start_str ) {
+    const auto add_langs_from = [&lang_list]( const std::string & start_str ) {
         if( start_str.empty() || !dir_exist( start_str ) ) {
             return;
         }
@@ -3201,14 +3201,14 @@ void options_manager::add_options_world_default()
 
         add( "CROP_WATER_CONSUMPTION", page_id, to_translation( "Crop water consumption" ),
              to_translation( "Multiplier for daily water consumption of irrigated crops.  "
-                              "Higher values make crops thirstier." ),
+                             "Higher values make crops thirstier." ),
              0.1f, 10.0f, 1.0f, 0.1f, COPT_NO_HIDE, "%.1f"
            );
 
         add( "CROP_OVERGROWN_ENABLED", page_id,
              to_translation( "Crops can wither from overgrowth" ),
              to_translation( "If true, mature crops will eventually become overgrown and "
-                              "wither if not harvested." ),
+                             "wither if not harvested." ),
              true
            );
     } );

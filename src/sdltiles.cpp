@@ -348,10 +348,10 @@ static void refresh_drawable_dims()
 static bool apply_resize_layout( int w, int h );
 
 #if defined(__ANDROID__)
-// The Android window is created before SDL reports its final maximized size.
-// Keep this separate from the saved TERMINAL_X/Y values: automatic sizing must
-// not overwrite the user's manual fallback.
-static point get_android_terminal_size();
+    // The Android window is created before SDL reports its final maximized size.
+    // Keep this separate from the saved TERMINAL_X/Y values: automatic sizing must
+    // not overwrite the user's manual fallback.
+    static point get_android_terminal_size();
 #endif
 
 static bool SetupRenderTarget()
@@ -981,7 +981,8 @@ extern "C" {
         visible_frame_inbox.publish( left, top, right, bottom, visible == JNI_TRUE );
     }
 
-    JNIEXPORT void JNICALL Java_com_crimsoncrossbunker_cataclysmcb_CataclysmDDA_onNativeImeInsetsChanged(
+    JNIEXPORT void JNICALL
+    Java_com_crimsoncrossbunker_cataclysmcb_CataclysmDDA_onNativeImeInsetsChanged(
         JNIEnv *env, jclass jcls, jint left, jint top, jint right, jint bottom, jboolean visible )
     {
         ( void )env;
@@ -1074,7 +1075,7 @@ static int get_android_shortcut_height()
     constexpr float shortcut_authored_density = 3.0f; // 480p xxhdpi
     const float density = std::max( 1.0f, android_get_display_density() );
     return std::max( 1, static_cast<int>( std::floor( density / shortcut_authored_density *
-                              get_option<int>( "ANDROID_SHORTCUT_HEIGHT" ) ) ) );
+                                          get_option<int>( "ANDROID_SHORTCUT_HEIGHT" ) ) ) );
 }
 
 static SDL_Rect get_android_content_bounds()
@@ -1122,7 +1123,7 @@ static point get_android_terminal_size()
 
     const float cell_aspect = static_cast<float>( fontwidth ) / static_cast<float>( fontheight );
     int columns = std::clamp( static_cast<int>( std::lround( static_cast<float>( bounds.w ) /
-                                     static_cast<float>( bounds.h ) * rows / cell_aspect ) ),
+                              static_cast<float>( bounds.h ) * rows / cell_aspect ) ),
                               EVEN_MINIMUM_TERM_WIDTH, maximum_auto_terminal_width );
     columns -= columns % 2;
     return point( columns, rows );

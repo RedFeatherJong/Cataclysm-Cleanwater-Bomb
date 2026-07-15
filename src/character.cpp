@@ -75,8 +75,8 @@
 #include "monster.h"
 #include "morale.h"
 #ifdef MP_ENABLED
-#include "mp_client_conn.h"
-#include "mp_gamestate.h"
+    #include "mp_client_conn.h"
+    #include "mp_gamestate.h"
 #endif
 #include "move_mode.h"
 #include "mtype.h"
@@ -3758,7 +3758,8 @@ int Character::throw_range( const item &it ) const
     if( do_railgun && !throw_assist ) {
         int ench_range = enchantment_cache->get_value_add( enchant_vals::mod::RANGE );
         double ench_range_mult = 1.0 + enchantment_cache->get_value_multiply( enchant_vals::mod::RANGE );
-        const int railgun_range_cap_max = round( ( attr_int * 3 + get_skill_level( skill_throw ) + ench_range ) * ench_range_mult + 10 );
+        const int railgun_range_cap_max = round( ( attr_int * 3 + get_skill_level(
+                                              skill_throw ) + ench_range ) * ench_range_mult + 10 );
         if( tmp.weight() >= 150_gram ) {
             ret = ( ( attr_int * 20 ) / ( tmp.weight() / 113_gram ) + ench_range ) * ench_range_mult + 5;
         } else if( tmp.weight() >= 20_gram ) {

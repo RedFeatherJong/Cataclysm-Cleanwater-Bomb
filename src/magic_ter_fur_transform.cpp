@@ -50,7 +50,7 @@ void sync_plant_seed_after_furniture_transform( map &m, const tripoint_bub_ms &l
     }
 
     const std::vector<std::pair<flag_id, time_duration>> &growth_stages =
-        seed->type->seed->get_growth_stages();
+                seed->type->seed->get_growth_stages();
     const int new_stage_idx = iexamine::get_plant_current_stage_idx( m, location, growth_stages );
     if( new_stage_idx < 0 ) {
         return;
@@ -64,7 +64,7 @@ void sync_plant_seed_after_furniture_transform( map &m, const tripoint_bub_ms &l
     const time_duration threshold = iexamine::get_plant_stage_threshold( *seed->type->seed,
                                     new_stage_idx );
     const time_duration current_effective = iexamine::get_plant_effective_growth_time( *seed,
-            growth_multiplier );
+                                            growth_multiplier );
 
     // Effective growth time is stored in base growth units.  CROP_GROWTH_SPEED only
     // affects how fast those units accumulate during natural growth, so the

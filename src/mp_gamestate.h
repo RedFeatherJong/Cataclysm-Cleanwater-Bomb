@@ -12,7 +12,8 @@ class npc;
 class Character;
 struct WORLD;
 
-namespace cata_mp {
+namespace cata_mp
+{
 
 // Called once per game turn from do_turn() — drains the event queue and
 // processes connect/disconnect/action events from remote players.
@@ -488,7 +489,8 @@ void client_resync_worn();
 // game turn after the avatar activity loop has run and consumed moves.
 // Pass the activity ID that was running BEFORE the loop so the dispatch still
 // fires when the activity consumed moves and then called finish() this same turn.
-void client_dispatch_wait_for_activity( const activity_id &pre_id = activity_id(), bool force_idle = false );
+void client_dispatch_wait_for_activity( const activity_id &pre_id = activity_id(),
+                                        bool force_idle = false );
 
 // Client only: emit an explicit activity-lifecycle marker to the host.  These
 // are signal-only — they don't consume client moves and the host doesn't

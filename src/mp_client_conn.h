@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <string>
 
-namespace cata_mp {
+namespace cata_mp
+{
 
 bool is_client_mode();
 void set_client_mode( bool enabled );

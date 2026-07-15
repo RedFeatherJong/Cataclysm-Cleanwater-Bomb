@@ -1,5 +1,5 @@
 #include <cmath>
-#include <initializer_list> 
+#include <initializer_list>
 
 #include "cata_catch.h"
 #include "shockwave.h"

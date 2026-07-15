@@ -1576,8 +1576,8 @@ static double thrown_item_weight_damage( const Character &thrower, const item &t
     // Base 1.0; high skill and dexterity let the thrower get more damage out of
     // light items without changing the low-stat balance.
     float velocity_factor = 1.0f
-                                  + 0.5f * ( skill / static_cast<float>( MAX_SKILL ) )
-                                  + 0.03f * std::max( 0, dex - 8 );
+                            + 0.5f * ( skill / static_cast<float>( MAX_SKILL ) )
+                            + 0.03f * std::max( 0, dex - 8 );
 
     // When using bionic railgun, it is not considered a normal throw; a special algorithm is employed.
     bool do_railgun = thrower.has_active_bionic( fcl_bio_railgun ) && thrown.made_of_any( ferric );
@@ -1598,7 +1598,8 @@ static double thrown_item_weight_damage( const Character &thrower, const item &t
     // RANGED_DAMAGE enchantment can used at railgun throwing
     if( do_railgun ) {
         int ench_range_dmg = thrower.enchantment_cache->get_value_add( enchant_vals::mod::RANGED_DAMAGE );
-        double ench_range_dmg_mult = 1.0 + thrower.enchantment_cache->get_value_multiply( enchant_vals::mod::RANGED_DAMAGE );
+        double ench_range_dmg_mult = 1.0 + thrower.enchantment_cache->get_value_multiply(
+                                         enchant_vals::mod::RANGED_DAMAGE );
         thrown_dmg += ench_range_dmg;
         thrown_dmg *= ench_range_dmg_mult;
         thrown_dmg += 8;
@@ -1615,10 +1616,10 @@ int Character::thrown_item_adjusted_damage( const item &thrown ) const
 
     // The damage dealt due to item's weight, player's strength, and skill level
     // Up to str/2 or weight/100g (lower), so 10 str is 5 damage before multipliers
-    // Railgun uses intelligence and base kinetic energy boosts as a form of power 
+    // Railgun uses intelligence and base kinetic energy boosts as a form of power
     // to simulate a character's ability to operate and calculate with high-tech equipment.
     ///\ARM_STR increases throwing damage
-    double modifier = std::max( 0.85f , get_modifier( character_modifier_limb_str_mod ) );
+    double modifier = std::max( 0.85f, get_modifier( character_modifier_limb_str_mod ) );
     double stats_mod = do_railgun ? ( 10 + ( get_int() * modifier ) / 2.0 ) : ( get_arm_str() / 2.0 );
     stats_mod = throw_assist ? *throw_assist / 2.0 : stats_mod;
     // modify strength impact based on skill level, clamped to [0.15 - 1]

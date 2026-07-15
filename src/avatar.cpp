@@ -20,8 +20,8 @@
 #include "avatar_action.h"
 #include "bodypart.h"
 #ifdef MP_ENABLED
-#include "mp_client_conn.h"
-#include "mp_gamestate.h"
+    #include "mp_client_conn.h"
+    #include "mp_gamestate.h"
 #endif
 #include "calendar.h"
 #include "cata_assert.h"

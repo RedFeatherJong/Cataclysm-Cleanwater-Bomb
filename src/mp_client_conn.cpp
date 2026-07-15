@@ -20,7 +20,8 @@
 
 using asio::ip::tcp;
 
-namespace cata_mp {
+namespace cata_mp
+{
 
 // ---------------------------------------------------------------------------
 // Client mode flag
@@ -89,7 +90,7 @@ static std::string mp_decompress_frame( std::string line )
         return line;
     }
     const std::string b64 = line.substr( prefix.size(),
-                                          line.size() - prefix.size() - 2 );
+                                         line.size() - prefix.size() - 2 );
     const std::string comp = base64_decode( b64 );
     const unsigned long long orig =
         ZSTD_getFrameContentSize( comp.data(), comp.size() );

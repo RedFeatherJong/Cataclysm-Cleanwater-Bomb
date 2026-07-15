@@ -5,7 +5,8 @@
 
 class map_extra;
 
-using tripoint_abs_omt = coords::coord_point<tripoint, coords::origin::abs, coords::scale::overmap_terrain>;
+using tripoint_abs_omt =
+    coords::coord_point<tripoint, coords::origin::abs, coords::scale::overmap_terrain>;
 
 /**
  * Deferred mapgen hooks and autonotes for worker-thread mapgen.

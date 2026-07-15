@@ -54,7 +54,7 @@ class thread
             return mHandle;
         }
         thread(): mHandle( STD_THREAD_INVALID_HANDLE ) = default;
-        thread( thread &other )
+        thread( thread & other )
             : mHandle( other.mHandle ), mThreadId( other.mThreadId ) {
             other.mHandle = STD_THREAD_INVALID_HANDLE;
             other.mThreadId.clear();

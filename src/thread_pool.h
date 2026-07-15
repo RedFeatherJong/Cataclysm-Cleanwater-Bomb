@@ -10,7 +10,8 @@
 #include <memory>
 
 /** Simple C++17-compatible latch (replaces std::latch from C++20). */
-class simple_latch {
+class simple_latch
+{
     public:
         explicit simple_latch( int count ) : count_( count ) {}
 

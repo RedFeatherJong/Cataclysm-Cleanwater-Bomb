@@ -2863,7 +2863,8 @@ void iexamine::harvest_plant( Character &you, const tripoint_bub_ms &examp, bool
                 plant_count, seedCount );
 
             const int stage_idx = get_plant_current_stage_idx_from_effective( here, examp );
-            const std::string stage = stage_idx >= 0 ? type.seed->get_growth_stages()[stage_idx].first.str() : "";
+            const std::string stage = stage_idx >= 0 ? type.seed->get_growth_stages()[stage_idx].first.str() :
+                                      "";
             const std::map<std::string, std::string> string_ctx;
             const std::map<std::string, double> num_ctx = {
                 { "plant_count", static_cast<double>( plant_count ) },
@@ -3171,10 +3172,10 @@ void iexamine::water_plant( Character &you, const tripoint_bub_ms &examp )
                               seed->type->seed->get_growth_stages()[stage_idx].first.str() : "";
     if( furn.plant ) {
         run_plant_eocs( furn.plant->eoc_on_water, you, here, examp, *seed, stage, stage,
-                        {}, { { "water_added", static_cast<double>( irrigation::WATER_PER_POUR ) } } );
+        {}, { { "water_added", static_cast<double>( irrigation::WATER_PER_POUR ) } } );
     }
     run_plant_eocs( seed->type->seed->eoc_on_water, you, here, examp, *seed, stage, stage,
-                    {}, { { "water_added", static_cast<double>( irrigation::WATER_PER_POUR ) } } );
+    {}, { { "water_added", static_cast<double>( irrigation::WATER_PER_POUR ) } } );
 
     you.add_msg_if_player( m_good, _( "You pour some water on the %s." ), seed->get_plant_name() );
 }
@@ -3350,7 +3351,7 @@ int iexamine::get_plant_current_stage_idx_from_effective( map &here, const tripo
         return -1;
     }
     const time_duration effective_time = get_plant_effective_growth_time( *seed,
-            furn.plant->growth_multiplier );
+                                         furn.plant->growth_multiplier );
     return get_plant_stage_idx_from_effective_time( *seed->type->seed, effective_time );
 }
 
@@ -3398,7 +3399,7 @@ bool iexamine::is_plant_overgrown( map &here, const tripoint_bub_ms &p )
         return false;
     }
     const std::vector<std::pair<flag_id, time_duration>> &growth_stages =
-        seed->type->seed->get_growth_stages();
+                seed->type->seed->get_growth_stages();
     const int overgrown_stage_idx = get_plant_overgrown_stage_idx( *seed->type->seed );
     if( overgrown_stage_idx < 0 ) {
         return false;

@@ -96,7 +96,7 @@ cata_thread_pool &get_thread_pool()
             return 0u;
         }
         const int workers_opt = has_option( "THREAD_POOL_WORKERS" ) ?
-                                get_option<int>( "THREAD_POOL_WORKERS" ) : 0;
+        get_option<int>( "THREAD_POOL_WORKERS" ) : 0;
         if( workers_opt > 0 )
         {
             return static_cast<unsigned int>( workers_opt );

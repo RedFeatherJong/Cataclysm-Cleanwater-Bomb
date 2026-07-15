@@ -622,10 +622,12 @@ cli_opts parse_commandline( int argc, const char **argv )
                     result.client_mode = true;
                     const std::string arg = params[0];
                     const auto colon = arg.rfind( ':' );
-                    if( colon != std::string::npos ) {
+                    if( colon != std::string::npos )
+                    {
                         result.client_host = arg.substr( 0, colon );
                         result.client_port = static_cast<uint16_t>( std::stoi( arg.substr( colon + 1 ) ) );
-                    } else {
+                    } else
+                    {
                         result.client_host = arg;
                     }
                     return 1;

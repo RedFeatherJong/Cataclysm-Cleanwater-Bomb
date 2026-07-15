@@ -75,7 +75,7 @@
 #include "mapgen.h"
 #include "material.h"
 #ifdef MP_ENABLED
-#include "mp_gamestate.h"
+    #include "mp_gamestate.h"
 #endif
 #include "math_defines.h"
 #include "mission.h"
@@ -135,7 +135,8 @@ static const ammotype ammo_battery( "battery" );
 
 static const furn_str_id furn_f_rope_up( "f_rope_up" );
 
-static void erase_cached_vehicle_ladders( std::map<tripoint_bub_ms, std::pair<vehicle *, int> > &cache,
+static void erase_cached_vehicle_ladders( std::map<tripoint_bub_ms, std::pair<vehicle *, int> >
+        &cache,
         const vehicle *veh )
 {
     erase_if( cache, [veh]( const std::pair<const tripoint_bub_ms, std::pair<vehicle *, int>> &entry ) {
@@ -1335,10 +1336,10 @@ vehicle *map::move_vehicle( vehicle &veh, const tripoint_rel_ms &dp, const tiler
         if( cata_mp::is_hosting() && !collisions.empty() ) {
             for( const veh_collision &c : collisions ) {
                 cata_mp::mp_log( "[veh-coll] veh=" + veh.name +
-                                  " type=" + std::to_string( static_cast<int>( c.type ) ) +
-                                  " imp=" + std::to_string( c.imp ) +
-                                  " target=" + c.target_name +
-                                  " dp=" + std::to_string( dp1.x() ) + "," + std::to_string( dp1.y() ) );
+                                 " type=" + std::to_string( static_cast<int>( c.type ) ) +
+                                 " imp=" + std::to_string( c.imp ) +
+                                 " target=" + c.target_name +
+                                 " dp=" + std::to_string( dp1.x() ) + "," + std::to_string( dp1.y() ) );
             }
         }
 #endif
@@ -8722,7 +8723,7 @@ bool map::draw_maptile( const catacurses::window &w, const tripoint_bub_ms &p,
         sym = curr_furn->symbol();
         tercol = curr_furn->color();
         if( !vehicle_ladder_furn && !( player_character.get_grab_type() == object_type::FURNITURE
-               && p == player_character.pos_bub() + player_character.grab_point ) ) {
+                                       && p == player_character.pos_bub() + player_character.grab_point ) ) {
             memory_sym = sym;
         }
     }
@@ -10254,7 +10255,7 @@ void map::grow_plant( const tripoint_bub_ms &p )
             effective_growth_time = seed->age() * initial_furn.plant->growth_multiplier *
                                     crop_growth_speed;
             const int current_stage_idx = iexamine::get_plant_current_stage_idx( *this, p,
-                    growth_stages );
+                                          growth_stages );
             const time_duration min_effective_for_stage =
                 iexamine::get_plant_stage_threshold( *seed->type->seed, current_stage_idx );
             if( effective_growth_time < min_effective_for_stage ) {
@@ -10279,7 +10280,7 @@ void map::grow_plant( const tripoint_bub_ms &p )
 
                 // Determine starting stage index from current furniture flag.
                 int current_stage_idx = iexamine::get_plant_current_stage_idx( *this, p,
-                        growth_stages );
+                                        growth_stages );
 
                 // Cumulative stage thresholds are precomputed during item finalize.
                 const std::vector<time_duration> &stage_thresholds =
@@ -10295,13 +10296,13 @@ void map::grow_plant( const tripoint_bub_ms &p )
                     const float consumption_mult = iexamine::get_plant_water_consumption_multiplier(
                                                        current_furn );
                     const int daily_consumption = std::max( 1,
-                            static_cast<int>( base_daily_consumption * consumption_mult *
-                                              crop_water_consumption ) );
+                                                            static_cast<int>( base_daily_consumption * consumption_mult *
+                                                                    crop_water_consumption ) );
 
                     // Rainwater collection for outdoor irrigable planters.
                     if( !this->is_roofed( p ) ) {
                         const weather_type_id w = current_weather( this->get_abs( p ),
-                                          last_check + day * 1_days );
+                                                  last_check + day * 1_days );
                         const int rain_water = iexamine::rain_water_for_weather( w );
                         if( rain_water > 0 ) {
                             current_water = std::min( max_water, current_water + rain_water );
@@ -10332,7 +10333,7 @@ void map::grow_plant( const tripoint_bub_ms &p )
 
                 iexamine::set_plant_water( *seed, current_water );
                 iexamine::set_plant_last_water_check( *seed,
-                        last_check + elapsed_days * 1_days );
+                                                      last_check + elapsed_days * 1_days );
                 iexamine::set_plant_effective_growth_turns( *seed,
                         to_turns<int>( effective_growth_time ) );
             }
@@ -10359,7 +10360,7 @@ void map::grow_plant( const tripoint_bub_ms &p )
             effective_growth_time = seed->age() * initial_furn.plant->growth_multiplier *
                                     crop_growth_speed;
             const int current_stage_idx = iexamine::get_plant_current_stage_idx( *this, p,
-                    growth_stages );
+                                          growth_stages );
             const time_duration min_effective_for_stage =
                 iexamine::get_plant_stage_threshold( *seed->type->seed, current_stage_idx );
             if( effective_growth_time < min_effective_for_stage ) {
@@ -10397,14 +10398,14 @@ void map::grow_plant( const tripoint_bub_ms &p )
     };
 
     const int start_stage_idx = static_cast<int>( std::distance(
-            growth_stages.begin(),
-            std::find_if( growth_stages.begin(), growth_stages.end(),
-                          check_flag( current_stage.str() ) ) ) );
+                                    growth_stages.begin(),
+                                    std::find_if( growth_stages.begin(), growth_stages.end(),
+                                            check_flag( current_stage.str() ) ) ) );
 
     const int target_stage_idx = static_cast<int>( std::distance(
-            growth_stages.begin(),
-            std::find_if( growth_stages.begin(), growth_stages.end(),
-                          check_flag( target_stage.str() ) ) ) );
+                                     growth_stages.begin(),
+                                     std::find_if( growth_stages.begin(), growth_stages.end(),
+                                             check_flag( target_stage.str() ) ) ) );
 
     const int mature_stage_idx = iexamine::get_plant_mature_stage_idx( *seed->type->seed );
     const int overgrown_stage_idx = iexamine::get_plant_overgrown_stage_idx( *seed->type->seed );
@@ -10475,29 +10476,29 @@ void map::grow_plant( const tripoint_bub_ms &p )
 
         if( new_furn.plant ) {
             iexamine::run_plant_eocs( new_furn.plant->eoc_on_grow, alpha, *this, p, *current_seed,
-                                       old_stage, new_stage );
+                                      old_stage, new_stage );
         }
         iexamine::run_plant_eocs( current_seed->type->seed->eoc_on_grow, alpha, *this, p, *current_seed,
-                                   old_stage, new_stage );
+                                  old_stage, new_stage );
 
         if( mature_stage_idx >= 0 && old_stage_idx < mature_stage_idx &&
             new_stage_idx >= mature_stage_idx ) {
             if( new_furn.plant ) {
                 iexamine::run_plant_eocs( new_furn.plant->eoc_on_mature, alpha, *this, p, *current_seed,
-                                           old_stage, new_stage );
+                                          old_stage, new_stage );
             }
             iexamine::run_plant_eocs( current_seed->type->seed->eoc_on_mature, alpha, *this, p,
-                                       *current_seed, old_stage, new_stage );
+                                      *current_seed, old_stage, new_stage );
         }
 
         if( overgrown_stage_idx >= 0 && old_stage_idx < overgrown_stage_idx &&
             new_stage_idx >= overgrown_stage_idx ) {
             if( new_furn.plant ) {
                 iexamine::run_plant_eocs( new_furn.plant->eoc_on_overgrow, alpha, *this, p, *current_seed,
-                                           old_stage, new_stage );
+                                          old_stage, new_stage );
             }
             iexamine::run_plant_eocs( current_seed->type->seed->eoc_on_overgrow, alpha, *this, p,
-                                       *current_seed, old_stage, new_stage );
+                                      *current_seed, old_stage, new_stage );
         }
     }
 }

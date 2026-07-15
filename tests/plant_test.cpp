@@ -48,8 +48,10 @@ static const itype_id itype_water_clean( "water_clean" );
 static const skill_id skill_survival( "survival" );
 static const spell_id spell_test_fertilize_plant( "test_spell_fertilize_plant" );
 static const ter_str_id ter_t_dirtmound( "t_dirtmound" );
-static const ter_furn_transform_id ter_test_plant_seedling_to_mature( "ter_test_plant_seedling_to_mature" );
-static const ter_furn_transform_id ter_test_plant_seed_to_harvest( "ter_test_plant_seed_to_harvest" );
+static const ter_furn_transform_id
+ter_test_plant_seedling_to_mature( "ter_test_plant_seedling_to_mature" );
+static const ter_furn_transform_id
+ter_test_plant_seed_to_harvest( "ter_test_plant_seed_to_harvest" );
 static const vproto_id vehicle_prototype_oldtractor( "oldtractor" );
 
 namespace
@@ -121,7 +123,8 @@ TEST_CASE( "plant_lifecycle_eocs", "[plant][eoc]" )
 
         iexamine::harvest_plant( u, plot, false );
 
-        const std::string harvest_count = get_globals().get_global_value( "test_harvest_count" ).to_string();
+        const std::string harvest_count =
+            get_globals().get_global_value( "test_harvest_count" ).to_string();
         REQUIRE( !harvest_count.empty() );
         CHECK( std::stoi( harvest_count ) > 0 );
     }
@@ -341,7 +344,8 @@ TEST_CASE( "plant_fertilize_reduces_remaining_time", "[plant][fertilize]" )
 
     CHECK( effective_after > effective_before );
 
-    const std::string reduction = get_globals().get_global_value( "test_fertilize_reduction_turns" ).to_string();
+    const std::string reduction =
+        get_globals().get_global_value( "test_fertilize_reduction_turns" ).to_string();
     REQUIRE( !reduction.empty() );
     CHECK( std::stoi( reduction ) > 0 );
 }
@@ -522,7 +526,8 @@ TEST_CASE( "plant_vehicle_operations", "[plant][vehicle]" )
         CHECK( e.get<itype_id>( "seed_id" ) == itype_test_seed_eoc );
         CHECK( e.get<int>( "plant_count" ) > 0 );
 
-        const std::string harvest_count = get_globals().get_global_value( "test_harvest_count" ).to_string();
+        const std::string harvest_count =
+            get_globals().get_global_value( "test_harvest_count" ).to_string();
         REQUIRE( !harvest_count.empty() );
         CHECK( std::stoi( harvest_count ) > 0 );
     }
@@ -784,7 +789,8 @@ TEST_CASE( "crop_overgrown_enabled_world_option", "[plant][world_option]" )
     CHECK( iexamine::is_plant_harvestable( here, plot ) );
 }
 
-TEST_CASE( "crop_growth_speed_does_not_boost_ter_transform", "[plant][world_option][magic][ter_transform]" )
+TEST_CASE( "crop_growth_speed_does_not_boost_ter_transform",
+           "[plant][world_option][magic][ter_transform]" )
 {
     map &here = get_map();
     avatar &u = get_avatar();
@@ -833,7 +839,7 @@ TEST_CASE( "crop_growth_speed_does_not_boost_ter_transform", "[plant][world_opti
             *synced_seed, growth_multiplier );
     CHECK( actual_effective == expected_effective );
     CHECK( synced_seed->birthday() == calendar::turn - mature_threshold /
-            ( growth_multiplier * 2.0f ) );
+           ( growth_multiplier * 2.0f ) );
 }
 
 TEST_CASE( "ter_transform_does_not_boost_stage_with_high_crop_speed",
@@ -917,7 +923,7 @@ TEST_CASE( "crop_growth_speed_does_not_boost_spell_fertilize", "[plant][world_op
     REQUIRE( seed != nullptr );
     const float growth_multiplier = here.furn( plot )->plant->growth_multiplier;
     const time_duration before_effective = iexamine::get_plant_effective_growth_time( *seed,
-            growth_multiplier );
+                                           growth_multiplier );
 
     const spell sp( spell_test_fertilize_plant );
     spell_effect::fertilize_plant( sp, u, plot );
@@ -925,12 +931,12 @@ TEST_CASE( "crop_growth_speed_does_not_boost_spell_fertilize", "[plant][world_op
     seed = iexamine::get_seed_at( here, plot );
     REQUIRE( seed != nullptr );
     const time_duration after_effective = iexamine::get_plant_effective_growth_time( *seed,
-            growth_multiplier );
+                                          growth_multiplier );
 
     // The spell should advance the plant by 25% of its total growth duration,
     // regardless of world speed.
     const std::vector<std::pair<flag_id, time_duration>> &growth_stages =
-        seed->type->seed->get_growth_stages();
+                seed->type->seed->get_growth_stages();
     time_duration total_growth_time = 0_seconds;
     for( const auto &stage : growth_stages ) {
         total_growth_time += stage.second;
@@ -1125,7 +1131,8 @@ TEST_CASE( "can_fertilize_syncs_furniture_with_effective_time", "[plant][fertili
 namespace
 {
 static const furn_str_id furn_f_test_planter_high_water_seed( "test_f_planter_high_water_seed" );
-static const furn_str_id furn_f_test_planter_high_water_mature( "test_f_planter_high_water_mature" );
+static const furn_str_id
+furn_f_test_planter_high_water_mature( "test_f_planter_high_water_mature" );
 
 // Verify that seed->birthday() is consistent with seed_effective_growth_turns for the
 // current world options.  This catches drift between the authoritative variable and
