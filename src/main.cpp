@@ -925,7 +925,7 @@ int main( int argc, const char *argv[] )
             cata_mp::run_server( port, password, ver );
         } );
         host_thread.detach();
-        printf( "[cdda-mp] Hosting on port %d — waiting for player 2...\n", port );
+        printf( "[cdda-mp] Hosting on port %d — waiting for player 2…\n", port );
     }
 #endif
 

@@ -8,11 +8,11 @@
 */
 
 #ifndef WIN32STDTHREAD_H
-#ifndef _GLIBCXX_HAS_GTHREADS
+#ifndef __GLIBCXX_HAS_GTHREADS
 
 #define WIN32STDTHREAD_H
-#define GLIBCXX_THREAD 1
-#define GLIBCXX_HAS_GTHREADS 1
+#define _GLIBCXX_THREAD 1
+#define _GLIBCXX_HAS_GTHREADS 1
 
 #include <windows.h>
 #include <process.h>
@@ -22,7 +22,7 @@
 #include <system_error>
 
 //instead of INVALID_HANDLE_VALUE _beginthreadex returns 0
-#define STD_THREAD_INVALID_HANDLE nullptr
+#define _STD_THREAD_INVALID_HANDLE nullptr
 namespace std
 {
 
@@ -53,10 +53,10 @@ class thread
         native_handle_type native_handle() const {
             return mHandle;
         }
-        thread(): mHandle( STD_THREAD_INVALID_HANDLE ) = default;
+        thread(): mHandle( _STD_THREAD_INVALID_HANDLE ) {}
         thread( thread & other )
             : mHandle( other.mHandle ), mThreadId( other.mThreadId ) {
-            other.mHandle = STD_THREAD_INVALID_HANDLE;
+            other.mHandle = _STD_THREAD_INVALID_HANDLE;
             other.mThreadId.clear();
         }
         template<class Function, class... Args>
@@ -74,13 +74,13 @@ class thread
             return static_cast<unsigned long>( 0 );
         }
         bool joinable() const {
-            return mHandle != STD_THREAD_INVALID_HANDLE;
+            return mHandle != _STD_THREAD_INVALID_HANDLE;
         }
         void join() const {
             if( get_id() == GetCurrentThreadId() ) {
                 throw system_error( EDEADLK, generic_category() );
             }
-            if( mHandle == STD_THREAD_INVALID_HANDLE ) {
+            if( mHandle == _STD_THREAD_INVALID_HANDLE ) {
                 throw system_error( ESRCH, generic_category() );
             }
             if( !joinable() ) {
@@ -88,7 +88,7 @@ class thread
             }
             WaitForSingleObject( mHandle, INFINITE );
             CloseHandle( mHandle );
-            mHandle = STD_THREAD_INVALID_HANDLE;
+            mHandle = _STD_THREAD_INVALID_HANDLE;
             mThreadId.clear();
         }
 
@@ -116,7 +116,7 @@ class thread
             if( !joinable() ) {
                 throw system_error();
             }
-            mHandle = STD_THREAD_INVALID_HANDLE;
+            mHandle = _STD_THREAD_INVALID_HANDLE;
             mThreadId.clear();
         }
 };
@@ -143,5 +143,5 @@ void sleep_until( const std::chrono::time_point<Clock, Duration> &sleep_time )
 } // namespace this_thread
 
 } // namespace std
-#endif // _GLIBCXX_THREAD
+#endif // __GLIBCXX_THREAD
 #endif // WIN32STDTHREAD_H
