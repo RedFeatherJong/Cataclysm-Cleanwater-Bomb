@@ -5,9 +5,9 @@
     "copy-from": "box_of_batteries_random",
     "extend": {
       "items": [
-        { "item": "light_minus_atomic_battery_cell", "charges": 1000, "prob": 1, "count": [ 1, 3 ] },
-        { "item": "light_atomic_battery_cell", "charges": 1000, "prob": 1, "count": [ 1, 3 ] },
-        { "item": "medium_atomic_battery_cell", "charges": 1000, "prob": 1, "count": [ 1, 6 ] }
+        { "item": "light_minus_atomic_battery_cell", "charges": 1000, "prob": 1, "count": [ 0, 8 ] },
+        { "item": "light_atomic_battery_cell", "charges": 1000, "prob": 1, "count": [ 0, 4 ] },
+        { "item": "medium_atomic_battery_cell", "charges": 1000, "prob": 1, "count": [ 0, 3 ] }
       ]
     }
   }
