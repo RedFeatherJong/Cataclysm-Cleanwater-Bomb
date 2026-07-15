@@ -50,6 +50,26 @@
     "replace": "fcl_medium_atomic_battery_cell"
   },
   {
+    "id": "schematics_eyebot",
+    "type": "MIGRATION",
+    "replace": "fcl_schematics_eyebot"
+  },
+  {
+    "id": "schematics_copbot",
+    "type": "MIGRATION",
+    "replace": "fcl_schematics_copbot"
+  },
+  {
+    "id": "schematics_riotbot",
+    "type": "MIGRATION",
+    "replace": "fcl_schematics_riotbot"
+  },
+  {
+    "id": "schematics_molebot",
+    "type": "MIGRATION",
+    "replace": "fcl_schematics_molebot"
+  },
+  {
     "id": [ "bot_eyebot" ],
     "type": "MIGRATION",
     "replace": "fcl_bot_eyebot"
