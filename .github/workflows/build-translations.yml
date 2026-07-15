@@ -30,21 +30,23 @@ jobs:
           persist-credentials: false
 
       - name: Pull translations
-        continue-on-error: true
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
         run: |
           if [ -z "${TX_TOKEN}" ]; then
-          echo "No TX_TOKEN secret set in this repo, not pulling translations from Transifex"
-          exit 1
+            echo "::error::No TX_TOKEN secret set; refusing to build stale translations"
+            exit 1
           fi
           tx pull -a --force -w 2
 
-      - name: Discard invalid translations
+      - name: Validate and discard invalid translations
         run: ./lang/discard_invalid_po.sh
 
       - name: Update translation statistics
         run: ./lang/update_stats.sh
+
+      - name: Compile translations
+        run: ./lang/compile_mo.sh all
 
       - name: Store translation artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

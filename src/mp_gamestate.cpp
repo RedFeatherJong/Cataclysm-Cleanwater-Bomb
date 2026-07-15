@@ -3556,9 +3556,11 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
                     g_action_msgs_pending.push_back(
                         string_format( _( "You take control of the %s." ), veh.name ) );
                     if( engine_was_off ) {
-                        add_msg( _( "The %s's engine starts up." ), veh.name );
+                        add_msg( n_gettext( "The %s's engine starts up.",
+                                            "The %s's engines start up.", started ), veh.name );
                         g_action_msgs_pending.push_back(
-                            string_format( _( "The %s's engine starts up." ), veh.name ) );
+                            string_format( n_gettext( "The %s's engine starts up.",
+                                                      "The %s's engines start up.", started ), veh.name ) );
                     }
                 } else {
                     mp_log( "[cdda-mp] control_vehicle: engine failed to start" );
