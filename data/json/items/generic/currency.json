@@ -88,7 +88,7 @@
     "volume": "1 ml",
     "price": "1 cent",
     "price_postapoc": "1 cent",
-    "material": [ "copper", "copper_nickel" ],
+    "material": [ "copper", "brass" ],
     "symbol": "o",
     "color": "brown",
     "flags": [ "OLD_CURRENCY", "COIN_SHAPED" ],

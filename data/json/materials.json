@@ -623,7 +623,6 @@
     "id": "copper_nickel",
     "name": "Cupronickel",
     "//": "Setting based on C71500 (Cu70Ni30) data.",
-    "copy-from": "copper",
     "density": 8.95,
     "specific_heat_liquid": 0.49,
     "specific_heat_solid": 0.39,
