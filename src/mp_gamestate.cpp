@@ -109,6 +109,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <thread>
 #include <tuple>
@@ -119,6 +120,10 @@
 
 namespace cata_mp
 {
+
+static const morale_type morale_high_five( "morale_high_five" );
+
+static const vproto_id vehicle_prototype_none( "none" );
 
 void mp_log( const std::string &msg )
 {
@@ -192,7 +197,7 @@ void mp_log( const std::string &msg )
         // launch, never mid-session, so it never pulls live data out from under
         // a debugging run.
         constexpr std::uintmax_t LOG_CAP_BYTES = 10ULL * 1024 *
-                1024;  // 10 MB — keeps logs attachable to Discord (10MB free) / GitHub (25MB)
+            1024;  // 10 MB — keeps logs attachable to Discord (10MB free) / GitHub (25MB)
         std::error_code ec;
         const std::uintmax_t sz =
             std::filesystem::exists( desired_path, ec )
@@ -875,7 +880,7 @@ struct mp_hud_t {
         // (host = light cyan, client = light blue).  The status row sits below.
         const int ch = mp_chat_overlay_count();
         if( ch > 0 ) {
-            const int start = static_cast<int>( g_mp_chat_overlay.size() ) - ch;
+        const int start = static_cast<int>( g_mp_chat_overlay.size() ) - ch;
             for( int i = 0; i < ch; ++i ) {
                 const mp_chat_line &cl = g_mp_chat_overlay[start + i];
                 mvwprintz( win, point( 1, 1 + i ), cl.color, "%s",
@@ -903,7 +908,7 @@ struct mp_hud_t {
         // a matching NPC still exists in the active world.  Scan by cached
         // name so we can still pull HP / move_mode for the panel.
         if( !partner && !g_partner_name_cached.empty() ) {
-            for( npc &candidate : g->all_npcs() ) {
+        for( npc &candidate : g->all_npcs() ) {
                 if( candidate.name == g_partner_name_cached ) {
                     partner = &candidate;
                     break;
@@ -912,8 +917,8 @@ struct mp_hud_t {
         }
 
         if( !remote_player_connected && is_hosting() ) {
-            mvwprintz( win, point( 2, crow ), c_dark_gray, "%s",
-                       _( "Partner not connected" ) );
+        mvwprintz( win, point( 2, crow ), c_dark_gray, "%s",
+                   _( "Partner not connected" ) );
             wnoutrefresh( win );
             return;
         }
@@ -924,15 +929,15 @@ struct mp_hud_t {
         // Truncated to 10 chars with a ".." continuation marker.
         std::string pname = partner ? partner->name : g_partner_name_cached;
         if( pname.empty() ) {
-            pname = "Partner";
-        }
-        // First name only.
-        const size_t pname_sp = pname.find( ' ' );
-        if( pname_sp != std::string::npos ) {
-            pname = pname.substr( 0, pname_sp );
+        pname = "Partner";
+    }
+    // First name only.
+    const size_t pname_sp = pname.find( ' ' );
+    if( pname_sp != std::string::npos ) {
+        pname = pname.substr( 0, pname_sp );
         }
         if( pname.size() > 8 ) {
-            pname = pname.substr( 0, 8 );
+        pname = pname.substr( 0, 8 );
         }
         int x = 1;
         mvwprintz( win, point( x, crow ), c_white, "%-8s", pname.c_str() );
@@ -942,7 +947,7 @@ struct mp_hud_t {
         // Requires the proxy NPC; show a placeholder when it isn't available.
         char mm = '?';
         if( partner ) {
-            const std::string mode_str = partner->move_mode.str();
+        const std::string mode_str = partner->move_mode.str();
             if( !mode_str.empty() ) {
                 mm = mode_str[0];
             }
@@ -972,8 +977,8 @@ struct mp_hud_t {
         std::string hpbar = "-----";
         nc_color hp_color = c_dark_gray;
         if( partner && g_partner_hp_max > 0 ) {
-            const std::pair<std::string, nc_color> bar =
-                get_hp_bar( g_partner_hp_cur, g_partner_hp_max );
+        const std::pair<std::string, nc_color> bar =
+            get_hp_bar( g_partner_hp_cur, g_partner_hp_max );
             hpbar = bar.first;
             hp_color = bar.second;
         }
@@ -988,7 +993,7 @@ struct mp_hud_t {
         // "constructing a vehicle") so the panel matches the begin/finish
         // sentences.  Empty when partner is idle.
         if( !g_partner_activity.empty() ) {
-            const std::string verb = mp_activity_verb_phrase( g_partner_activity );
+        const std::string verb = mp_activity_verb_phrase( g_partner_activity );
             // Compose "<verb> NN%" — clamp verb length so the % stays on row.
             const int avail = W - x - 8; // reserve room for " NN%" + drift
             std::string vshown = verb;
@@ -3740,7 +3745,7 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
                 veh.skidding = true;
                 add_msg( m_warning, _( "%s loses control of %s." ), remote->name, veh.name );
                 g_action_msgs_pending.push_back( string_format( _( "You lose control of %s." ),
-                                                 veh.name ) );
+                        veh.name ) );
                 veh.turn( veh.last_turn > 0_degrees ? 60_degrees : -60_degrees );
             } else {
                 int braking_power = std::abs( veh.velocity ) / 2 + 10 * 100;
@@ -7916,7 +7921,7 @@ static std::string build_client_tile_changes( int radius = 10 )
             const std::string furn_str = m.furn( bub ).id().str();
             const std::string terfurn_sig = ter_str + '|' + furn_str;
             auto &terfurn_baseline = g_client_terfurn_baseline[abs];
-            const bool terfurn_changed = ( terfurn_baseline != terfurn_sig );
+            const bool terfurn_changed = terfurn_baseline != terfurn_sig;
             if( terfurn_changed ) {
                 terfurn_baseline = terfurn_sig;
             }
@@ -7925,7 +7930,7 @@ static std::string build_client_tile_changes( int radius = 10 )
             // Full item serialize() is used so nested pocket contents are included.
             std::string items_sig;
             std::string items_json = "[]";
-            auto items = m.i_at( bub );
+            map_stack items = m.i_at( bub );
             if( !items.empty() ) {
                 items_json = "[";
                 bool ifirst = true;
@@ -7941,7 +7946,7 @@ static std::string build_client_tile_changes( int radius = 10 )
                 items_json += "]";
             }
             auto &item_baseline = g_client_item_baseline[abs];
-            const bool items_changed = ( item_baseline != items_sig );
+            const bool items_changed = item_baseline != items_sig;
             if( items_changed ) {
                 item_baseline = items_sig;
                 if( !items_sig.empty() ) {
@@ -7980,7 +7985,7 @@ static std::string build_client_tile_changes( int radius = 10 )
                 fields_json += "]";
             }
             auto &field_baseline = g_client_field_baseline[abs];
-            const bool fields_changed = ( field_baseline != fields_sig );
+            const bool fields_changed = field_baseline != fields_sig;
             if( fields_changed ) {
                 field_baseline = fields_sig;
             }
@@ -7991,9 +7996,9 @@ static std::string build_client_tile_changes( int radius = 10 )
             const trap &tr_here = m.tr_at( bub );
             const trap_id &builtin_here = m.ter( bub )->trap;
             const bool is_builtin_c = !tr_here.is_null() && tr_here.loadid == builtin_here;
-            const std::string trap_sig_c = ( tr_here.is_null() || is_builtin_c ) ? "" : tr_here.id.str();
+            const std::string trap_sig_c = tr_here.is_null() || is_builtin_c ? "" : tr_here.id.str();
             auto &trap_baseline = g_client_trap_baseline[abs];
-            const bool trap_changed = ( trap_baseline != trap_sig_c );
+            const bool trap_changed = trap_baseline != trap_sig_c;
             if( trap_changed ) {
                 trap_baseline = trap_sig_c;
             }
@@ -8001,7 +8006,7 @@ static std::string build_client_tile_changes( int radius = 10 )
             // Graffiti — baseline-gated.
             const std::string graffiti_sig_c = m.has_graffiti_at( bub ) ? m.graffiti_at( bub ) : "";
             auto &graffiti_baseline = g_client_graffiti_baseline[abs];
-            const bool graffiti_changed = ( graffiti_baseline != graffiti_sig_c );
+            const bool graffiti_changed = graffiti_baseline != graffiti_sig_c;
             if( graffiti_changed ) {
                 graffiti_baseline = graffiti_sig_c;
             }
@@ -8012,7 +8017,7 @@ static std::string build_client_tile_changes( int radius = 10 )
             const std::string partial_con_sig_c = mp_partial_con_sig( bub );
             const bool has_pc_c = m.partial_con_at( bub ) != nullptr;
             auto &pc_baseline = g_client_partial_con_baseline[abs];
-            const bool pc_changed = ( pc_baseline != partial_con_sig_c );
+            const bool pc_changed = pc_baseline != partial_con_sig_c;
             const bool had_pc_c = !pc_baseline.empty();
             if( pc_changed ) {
                 pc_baseline = partial_con_sig_c;
@@ -8031,7 +8036,11 @@ static std::string build_client_tile_changes( int radius = 10 )
                    + ",\"y\":" + std::to_string( abs.y() )
                    + ",\"z\":" + std::to_string( abs.z() );
             if( terfurn_changed ) {
-                out += R"(,"ter":")" + ter_str + R"(","furn":")" + furn_str + "\"";
+                out += R"(,"ter":")";
+                out += ter_str;
+                out += R"(","furn":")";
+                out += furn_str;
+                out += '"';
             }
             if( items_changed ) {
                 out += ",\"items\":" + items_json;
@@ -8213,7 +8222,7 @@ static void client_capture_avatar_msgs()
         return;
     }
     const auto new_msgs = Messages::recent_messages( static_cast<size_t>( cur -
-                          g_client_msg_watermark ) );
+        g_client_msg_watermark ) );
     g_client_msg_watermark = cur;
     const std::string client_name = get_avatar().name;
     for( const auto &[time_str, text] : new_msgs ) {
@@ -8234,10 +8243,12 @@ static void client_capture_avatar_msgs()
             // "You finish waiting" → "finish waiting" → "finishes waiting" → "Roy finishes waiting"
             std::string rest = out.substr( 4 );
             add_third_person_s( rest );
-            out = client_name + " " + rest;
+            out = client_name;
+            out += ' ';
+            out += rest;
         } else {
             // "Now reading X" → "Roy is now reading X"
-            out = client_name + " is " + out;
+            out.insert( 0, client_name + " is " );
         }
         mp_addressee_to_you( out, client_name );   // partner's name → "you" (guarded)
         g_client_msgs_pending.push_back( out );
@@ -8865,7 +8876,7 @@ static std::string build_tile_changes( const tripoint_abs_ms &center, int radius
             // Full item serialize() is used so nested pocket contents are included.
             std::string items_sig;
             std::string items_json = "[]";
-            auto items = m.i_at( bub );
+            map_stack items = m.i_at( bub );
             if( !items.empty() ) {
                 items_json = "[";
                 bool ifirst = true;
@@ -8956,13 +8967,20 @@ static std::string build_tile_changes( const tripoint_abs_ms &center, int radius
             first = false;
             out += "{\"x\":" + std::to_string( abs.x() )
                    + ",\"y\":" + std::to_string( abs.y() )
-                   + ",\"z\":" + std::to_string( abs.z() )
-                   + R"(,"ter":")" + ter_str + "\""
-                   + R"(,"furn":")" + furn_str + "\""
-                   + ",\"items\":" + items_json
-                   + ",\"fields\":" + fields_json
-                   + R"(,"trap":")" + ( trap_sig.empty() ? "tr_null" : trap_sig ) + "\""
-                   + R"(,"graffiti":")" + json_escape_str( graffiti_sig ) + "\"";
+                   + ",\"z\":" + std::to_string( abs.z() );
+            out += R"(,"ter":")";
+            out += ter_str;
+            out += R"(","furn":")";
+            out += furn_str;
+            out += "\",\"items\":";
+            out += items_json;
+            out += ",\"fields\":";
+            out += fields_json;
+            out += R"(,"trap":")";
+            out += trap_sig.empty() ? "tr_null" : trap_sig;
+            out += R"(","graffiti":")";
+            out += json_escape_str( graffiti_sig );
+            out += '"';
             if( has_pc ) {
                 out += ",\"partial_con\":" + mp_partial_con_obj_json( bub );
             } else if( had_pc ) {
@@ -9007,18 +9025,17 @@ static std::string build_monster_list( const tripoint_abs_ms &center, int radius
             continue;
         }
         const tripoint_abs_ms mp = mon_ptr->pos_abs();
-        const int dx = std::abs( mp.x() - center.x() );
-        const int dy = std::abs( mp.y() - center.y() );
-        if( dx > radius || dy > radius || mp.z() != center.z() ) {
+        const point delta{ std::abs( mp.x() - center.x() ), std::abs( mp.y() - center.y() ) };
+        if( delta.x > radius || delta.y > radius || mp.z() != center.z() ) {
             // Diagnostic: a monster inside the reality bubble (≤84) but outside
             // this broadcast radius is NOT sent, so the client culls it
             // (MON-SYNC cull) even though it's alive on the host — the "monster
             // died for no reason near the players" bug. The broadcast is centered
             // on the client PROXY, which lags the real client, so the window can
             // sit off the monsters the client sees.
-            if( mp.z() == center.z() && dx <= 84 && dy <= 84 ) {
+            if( mp.z() == center.z() && delta.x <= 84 && delta.y <= 84 ) {
                 excluded_near += mon_ptr->type->id.str() + "@d" +
-                                 std::to_string( std::max( dx, dy ) ) + " ";
+                                 std::to_string( std::max( delta.x, delta.y ) ) + " ";
             }
             continue;
         }
@@ -9155,7 +9172,7 @@ static void apply_tile_changes( JsonObject &jo )
             // Log any items that currently exist locally but are about to be
             // cleared — these are client-only drops that the server doesn't know
             // about and will erase.
-            auto existing = m.i_at( bub );
+            map_stack existing = m.i_at( bub );
             if( !existing.empty() ) {
                 std::string had;
                 for( const item &it : existing ) {
@@ -9326,7 +9343,7 @@ static void apply_vehicle_sync( JsonObject &jo )
     // collide with its successor at the same tile.
     if( jo.has_array( "removed_vehicles" ) ) {
         for( const JsonValue &rv : jo.get_array( "removed_vehicles" ) ) {
-            const auto rnid = static_cast<uint32_t>( rv.get_int() );
+            const uint32_t rnid = static_cast<uint32_t>( rv.get_int() );
             auto pos_it = g_client_veh_pos.find( rnid );
             if( pos_it == g_client_veh_pos.end() ) {
                 continue;
@@ -9361,7 +9378,7 @@ static void apply_vehicle_sync( JsonObject &jo )
         JsonObject vo = entry.get_object();
         vo.allow_omitted_members();
 
-        const auto nid       = static_cast<uint32_t>( vo.get_int( "nid", 0 ) );
+        const uint32_t nid = static_cast<uint32_t>( vo.get_int( "nid", 0 ) );
         const tripoint_abs_ms new_abs{
             vo.get_int( "x" ), vo.get_int( "y" ), vo.get_int( "z" )
         };
@@ -9417,7 +9434,6 @@ static void apply_vehicle_sync( JsonObject &jo )
 
             JsonObject snap = vo.get_object( "snapshot" );
             snap.allow_omitted_members();
-            static const vproto_id vehicle_prototype_none( "none" );
             auto veh_up = std::make_unique<vehicle>( vehicle_prototype_none );
             veh_up->deserialize( snap );
             // Re-anchor sm_pos+pos to the broadcast abs position — the
@@ -9803,7 +9819,7 @@ static void apply_monster_sync( JsonObject &jo )
         mo.allow_omitted_members();
         ++n_recv;
 
-        const auto nid       = static_cast<uint32_t>( mo.get_int( "nid", 0 ) );
+        const uint32_t nid = static_cast<uint32_t>( mo.get_int( "nid", 0 ) );
         const int  server_hp = mo.get_int( "hp", -1 );
         const tripoint_abs_ms target{
             mo.get_int( "x" ), mo.get_int( "y" ), mo.get_int( "z" )
@@ -9969,7 +9985,12 @@ static void apply_monster_sync( JsonObject &jo )
     // despawns cleanly (no corpse, which would itself be a desync).
     {
         std::vector<monster *> local_cull;
-        for( monster *mon : in_region ) {
+        std::vector<monster *> ordered_in_region( in_region.begin(), in_region.end() );
+        std::sort( ordered_in_region.begin(), ordered_in_region.end(),
+        []( const monster * lhs, const monster * rhs ) {
+            return lhs->pos_abs() < rhs->pos_abs();
+        } );
+        for( monster *mon : ordered_in_region ) {
             if( mon && mon->mp_net_id == 0 && !matched.count( mon ) && !mon->is_dead() ) {
                 local_cull.push_back( mon );
             }
@@ -10023,7 +10044,7 @@ static void apply_monster_sync( JsonObject &jo )
             seen_now[key] = strikes;
             phantom_log += mon->type->id.str() + "@dAvatar" +
                            std::to_string( std::max( std::abs( mp.x() - av.x() ),
-                                           std::abs( mp.y() - av.y() ) ) ) +
+                               std::abs( mp.y() - av.y() ) ) ) +
                            "(s" + std::to_string( strikes ) + ") ";
             if( strikes >= PHANTOM_CULL_SYNCS ) {
                 phantom_cull.push_back( mon );
@@ -10102,16 +10123,15 @@ static std::string build_viewport( const tripoint_bub_ms &center )
     const point_bub_ms map_min{ 0, 0 };
     const point_bub_ms map_max{ MAPSIZE_X - 1, MAPSIZE_Y - 1 };
 
-    int ox = center.x() - W / 2;
-    int oy = center.y() - H / 2;
+    const point origin{ center.x() - W / 2, center.y() - H / 2 };
 
     std::string tiles;
     tiles.reserve( W * H );
 
     for( int row = 0; row < H; ++row ) {
         for( int col = 0; col < W; ++col ) {
-            int bx = ox + col;
-            int by = oy + row;
+            const int bx = origin.x + col;
+            const int by = origin.y + row;
             tripoint_bub_ms p{ bx, by, center.z() };
 
             if( bx < map_min.x() || bx > map_max.x() || by < map_min.y() || by > map_max.y() ) {
@@ -10137,8 +10157,8 @@ static std::string build_viewport( const tripoint_bub_ms &center )
 
     return "{\"w\":" + std::to_string( W ) +
            ",\"h\":" + std::to_string( H ) +
-           ",\"ox\":" + std::to_string( ox ) +
-           ",\"oy\":" + std::to_string( oy ) +
+           ",\"ox\":" + std::to_string( origin.x ) +
+           ",\"oy\":" + std::to_string( origin.y ) +
            R"(,"tiles":")" + tiles + "\"}";
 }
 
@@ -10224,7 +10244,7 @@ void mp_handle_pass_item()
     }
 
     item_location loc = game_menus::inv::titled_menu( av,
-                        _( "Pass what?" ), _( "You have no items to pass." ) );
+        _( "Pass what?" ), _( "You have no items to pass." ) );
     if( !loc ) {
         return;
     }
@@ -10247,8 +10267,6 @@ void mp_handle_pass_item()
 }
 
 // --- High-five partner action -------------------------------------------
-
-static const morale_type morale_high_five( "morale_high_five" );
 
 // A quick social beat, calibrated just under morale_chat. Anti-farm: only
 // grants while no high-five morale is still active. Repeated high-fives are
@@ -10423,7 +10441,7 @@ static void mp_send_note_msg( const std::string &payload )
     }
 }
 
-void mp_sync_note_add( const tripoint_abs_omt &pos, const std::string &text )
+void mp_sync_note_add( const tripoint_abs_omt &pos, std::string_view text )
 {
     if( g_applying_remote_note ) {
         return;
@@ -10443,9 +10461,9 @@ void mp_sync_note_add( const tripoint_abs_omt &pos, const std::string &text )
         }
     }
     std::string payload = R"({"type":"note_sync","op":"add","x":)" + std::to_string( pos.x() ) + ","
-                          "\"y\":" + std::to_string( pos.y() ) + ","
-                          "\"z\":" + std::to_string( pos.z() ) + ","
-                          "\"text\":\"" + escaped + "\"}";
+                           "\"y\":" + std::to_string( pos.y() ) + ","
+                           "\"z\":" + std::to_string( pos.z() ) + ","
+                           "\"text\":\"" + escaped + "\"}";
     mp_send_note_msg( payload );
     mp_log( "[cdda-mp] note_sync send: add at " + std::to_string( pos.x() ) + ","
             + std::to_string( pos.y() ) );
@@ -10460,8 +10478,8 @@ void mp_sync_note_delete( const tripoint_abs_omt &pos )
         return;
     }
     std::string payload = R"({"type":"note_sync","op":"delete","x":)" + std::to_string( pos.x() ) + ","
-                          "\"y\":" + std::to_string( pos.y() ) + ","
-                          "\"z\":" + std::to_string( pos.z() ) + "}";
+                           "\"y\":" + std::to_string( pos.y() ) + ","
+                           "\"z\":" + std::to_string( pos.z() ) + "}";
     mp_send_note_msg( payload );
     mp_log( "[cdda-mp] note_sync send: delete at " + std::to_string( pos.x() ) + ","
             + std::to_string( pos.y() ) );
@@ -10476,10 +10494,10 @@ void mp_sync_note_danger( const tripoint_abs_omt &pos, int radius, bool dangerou
         return;
     }
     std::string payload = R"({"type":"note_sync","op":"danger","x":)" + std::to_string( pos.x() ) + ","
-                          "\"y\":" + std::to_string( pos.y() ) + ","
-                          "\"z\":" + std::to_string( pos.z() ) + ","
-                          "\"radius\":" + std::to_string( radius ) + ","
-                          "\"dangerous\":" + ( dangerous ? "true" : "false" ) + "}";
+                           "\"y\":" + std::to_string( pos.y() ) + ","
+                           "\"z\":" + std::to_string( pos.z() ) + ","
+                           "\"radius\":" + std::to_string( radius ) + ","
+                           "\"dangerous\":" + ( dangerous ? "true" : "false" ) + "}";
     mp_send_note_msg( payload );
     mp_log( "[cdda-mp] note_sync send: danger at " + std::to_string( pos.x() ) + ","
             + std::to_string( pos.y() ) + " r=" + std::to_string( radius ) );
@@ -10736,7 +10754,7 @@ std::string serialize_remote_player_state()
     bool mfirst = true;
 
     // Helper: JSON-escape and append one message string.
-    const auto append_msg = [&]( const std::string & text ) {
+    const auto append_msg = [&]( std::string_view text ) {
         std::string escaped;
         escaped.reserve( text.size() );
         for( char c : text ) {
@@ -10780,7 +10798,8 @@ std::string serialize_remote_player_state()
     if( current_msg_count > g_last_forwarded_msg_count ) {
         const size_t new_count = static_cast<size_t>( current_msg_count - g_last_forwarded_msg_count );
         g_last_forwarded_msg_count = current_msg_count;
-        const auto new_msgs = Messages::recent_messages( new_count );
+        const std::vector<std::pair<std::string, std::string>> new_msgs =
+            Messages::recent_messages( new_count );
         for( const auto &[time_str, text] : new_msgs ) {
             ( void )time_str;
             // Swap/push messages are rendered on the client via semantic flags
@@ -10971,11 +10990,15 @@ std::string serialize_remote_player_state()
                              + ",\"face\":" + std::to_string( face_deg )
                              + ",\"turn_dir\":" + std::to_string( turn_dir_deg )
                              + ",\"vel\":" + std::to_string( v->velocity )
-                             + ",\"cruise\":" + std::to_string( v->cruise_velocity )
-                             + R"(,"name":")" + vname_escaped + "\""
-                             + ",\"parts\":" + parts_json
-                             + ",\"cargo\":" + cargo_json
-                             + snapshot_field + "}";
+                             + ",\"cruise\":" + std::to_string( v->cruise_velocity );
+            vehicles_json += R"(,"name":")";
+            vehicles_json += vname_escaped;
+            vehicles_json += "\",\"parts\":";
+            vehicles_json += parts_json;
+            vehicles_json += ",\"cargo\":";
+            vehicles_json += cargo_json;
+            vehicles_json += snapshot_field;
+            vehicles_json += '}';
         }
     }
     vehicles_json += ']';
@@ -11079,12 +11102,12 @@ std::string serialize_remote_player_state()
     + ( []() -> std::string {
         // One-shot wake_client signal — emit on this broadcast then clear.
         if( g_pending_wake_client )
-        {
-            g_pending_wake_client = false;
-            return "\"wake_client\":true,";
-        }
-        return "";
-    }() ) +
+    {
+        g_pending_wake_client = false;
+        return "\"wake_client\":true,";
+    }
+    return "";
+}() ) +
     ( []() -> std::string {
         // One-shot host→client swap/push signals — client renders the
         // observer message locally from the proxy name (no text relay).
@@ -11105,32 +11128,32 @@ std::string serialize_remote_player_state()
     ",\"moves\":" + std::to_string( g_remote_moves ) +
     ",\"speed\":" + std::to_string( remote->get_speed() ) +
     R"(,"client_move_mode":")" + remote->move_mode.str() + "\""
-    ",\"client_stamina\":" + std::to_string( remote->get_stamina() ) +
-    ",\"client_stamina_max\":" + std::to_string( remote->get_stamina_max() ) +
-    ",\"client_ctrl_veh\":" + ( remote->controlling_vehicle ? "true" : "false" ) +
-    // Authoritative grab + hauling state for the client's character.
-    // Client mirrors these onto its local avatar each tick so the
-    // local SP grab/haul code (and its move-cost gating) reads the
-    // same values the host is enforcing.
-    // MP-FIXME: npc::get_grab_type stubbed for CCB
-    ",\"client_grab_type\":0 /* static_cast<int>(remote->get_grab_type()) */" +
-    ",\"client_grab_dx\":" + std::to_string( remote->grab_point.x() ) +
-    ",\"client_grab_dy\":" + std::to_string( remote->grab_point.y() ) +
-    ",\"client_grab_dz\":" + std::to_string( remote->grab_point.z() ) +
-    ",\"client_hauling\":" + ( remote->is_hauling() ? "true" : "false" ) +
+     ",\"client_stamina\":" + std::to_string( remote->get_stamina() ) +
+     ",\"client_stamina_max\":" + std::to_string( remote->get_stamina_max() ) +
+     ",\"client_ctrl_veh\":" + ( remote->controlling_vehicle ? "true" : "false" ) +
+            // Authoritative grab + hauling state for the client's character.
+            // Client mirrors these onto its local avatar each tick so the
+            // local SP grab/haul code (and its move-cost gating) reads the
+            // same values the host is enforcing.
+            // MP-FIXME: npc::get_grab_type stubbed for CCB
+     ",\"client_grab_type\":0 /* static_cast<int>(remote->get_grab_type()) */" +
+     ",\"client_grab_dx\":" + std::to_string( remote->grab_point.x() ) +
+     ",\"client_grab_dy\":" + std::to_string( remote->grab_point.y() ) +
+     ",\"client_grab_dz\":" + std::to_string( remote->grab_point.z() ) +
+     ",\"client_hauling\":" + ( remote->is_hauling() ? "true" : "false" ) +
     [&]() -> std::string {
         if( !remote->controlling_vehicle )
-        {
-            return "";
-        }
-        map &vmap = get_map();
-        const optional_vpart_position ovp = vmap.veh_at( remote->pos_bub() );
+    {
+        return "";
+    }
+    map &vmap = get_map();
+    const optional_vpart_position ovp = vmap.veh_at( remote->pos_bub() );
         if( !ovp )
-        {
-            return "";
-        }
-        const tripoint_abs_ms vabs = ovp->vehicle().pos_abs();
-        return R"(,"client_veh_pos":{"x":)" + std::to_string( vabs.x() )
+    {
+        return "";
+    }
+    const tripoint_abs_ms vabs = ovp->vehicle().pos_abs();
+    return R"(,"client_veh_pos":{"x":)" + std::to_string( vabs.x() )
         + ",\"y\":" + std::to_string( vabs.y() )
         + ",\"z\":" + std::to_string( vabs.z() ) + "}";
     }() +
@@ -11144,15 +11167,19 @@ std::string serialize_remote_player_state()
     ",\"sfx\":" + [&]() -> std::string {
         std::string j = "[";
         bool first = true;
-        for( const auto &e : g_host_sfx_queue )
+        for( const MPSfxEvent &e : g_host_sfx_queue )
         {
             if( !first ) {
                 j += ',';
             }
             first = false;
-            j += R"({"id":")" + json_escape_str( e.id )
-                 + R"(","v":")" + json_escape_str( e.variant )
-                 + R"(","vol":)" + std::to_string( e.vol ) + "}";
+            j += R"({"id":")";
+            j += json_escape_str( e.id );
+            j += R"(","v":")";
+            j += json_escape_str( e.variant );
+            j += R"(","vol":)";
+            j += std::to_string( e.vol );
+            j += '}';
         }
         g_host_sfx_queue.clear();
         j += "]";

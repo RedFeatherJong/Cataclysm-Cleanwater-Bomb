@@ -1,4 +1,4 @@
-#include <stddef.h>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -56,12 +56,13 @@ std::vector<mon_fingerprint> run_scenario( unsigned int seed, int turns )
     // A small ring of zombies around a central point. Zombies have no baby_type,
     // so this also exercises the cub-anger early-out path.
     const tripoint_bub_ms center{ 65, 65, 0 };
-    std::vector<monster *> mons;
     const std::vector<tripoint_bub_ms> spots = {
         center + tripoint::north, center + tripoint::south,
         center + tripoint::east, center + tripoint::west,
         center + tripoint::north_east, center + tripoint::south_west,
     };
+    std::vector<monster *> mons;
+    mons.reserve( spots.size() );
     for( const tripoint_bub_ms &p : spots ) {
         mons.push_back( &spawn_test_monster( "mon_zombie", p ) );
     }

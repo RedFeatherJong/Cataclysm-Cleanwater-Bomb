@@ -621,7 +621,7 @@ cli_opts parse_commandline( int argc, const char **argv )
                 [&result]( int, const char **params ) -> int {
                     result.client_mode = true;
                     const std::string arg = params[0];
-                    const auto colon = arg.rfind( ':' );
+                    const std::string::size_type colon = arg.rfind( ':' );
                     if( colon != std::string::npos )
                     {
                         result.client_host = arg.substr( 0, colon );

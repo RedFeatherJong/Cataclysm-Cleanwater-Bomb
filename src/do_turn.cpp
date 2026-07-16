@@ -164,7 +164,7 @@ bool cleanup_at_end()
         std::vector<std::string> characters = g->list_active_saves();
         // remove current player from the active characters list, as they are dead
         std::vector<std::string>::iterator curchar = std::find( characters.begin(),
-                characters.end(), u.get_save_id() );
+            characters.end(), u.get_save_id() );
         if( curchar != characters.end() ) {
             characters.erase( curchar );
         }
@@ -329,7 +329,7 @@ void monmove()
             continue;
         }
         ++mon_count;
-        const auto mon_t0 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point mon_t0 = std::chrono::steady_clock::now();
         const tripoint_bub_ms critter_pos = critter.pos_bub( m );
 
         // Critters in impassable tiles get pushed away, unless it's not impassable for them
@@ -431,7 +431,7 @@ void monmove()
             cata_mp::mp_tick_proxy_activity( guy );
             continue;
         }
-        const auto npc_t0 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point npc_t0 = std::chrono::steady_clock::now();
         int turns = 0;
         int real_count = 0;
         const int count_limit = std::max( 10, guy.get_moves() / 64 );
@@ -517,7 +517,7 @@ void overmap_npc_move()
             }
             if( elem->omt_path.empty() ) {
                 elem->omt_path = overmap_buffer.get_travel_path( elem->pos_abs_omt(), elem->goal,
-                                 overmap_path_params::for_npc() ).points;
+                    overmap_path_params::for_npc() ).points;
                 if( elem->omt_path.empty() ) { // goal is unreachable, or already reached goal, reset it
                     elem->goal = npc::no_goal_point;
                 }
@@ -585,15 +585,16 @@ void game::handle_progress_ui()
         // FF mode: bypass the calendar gate entirely and use a wall-clock cap
         // (~100ms = ~10 Hz).  This lets thousands of game turns race through
         // per second while the progress popup still updates smoothly.
-        static auto s_last_ff_redraw = std::chrono::steady_clock::time_point {};
+        static std::chrono::steady_clock::time_point s_last_ff_redraw =
+            std::chrono::steady_clock::time_point {};
         const bool ff_active = cata_mp::should_fast_forward();
         const bool ff_redraw_due = [&] {
             if( !ff_active )
-            {
-                return false;
-            }
-            const auto now = std::chrono::steady_clock::now();
-            if( first_redraw_since_waiting_started ||
+        {
+            return false;
+        }
+        const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        if( first_redraw_since_waiting_started ||
                 std::chrono::duration_cast<std::chrono::milliseconds>( now - s_last_ff_redraw ).count() >= 100 )
             {
                 s_last_ff_redraw = now;

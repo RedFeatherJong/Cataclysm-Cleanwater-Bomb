@@ -6,6 +6,7 @@
 #include <climits>
 #include <list>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "character_id.h"
@@ -586,7 +587,7 @@ void mp_open_chat();
 
 // Overmap note sync — call after add_note / delete_note / mark_note_dangerous
 // so the partner's overmap mirrors the change.
-void mp_sync_note_add( const tripoint_abs_omt &pos, const std::string &text );
+void mp_sync_note_add( const tripoint_abs_omt &pos, std::string_view text );
 void mp_sync_note_delete( const tripoint_abs_omt &pos );
 void mp_sync_note_danger( const tripoint_abs_omt &pos, int radius, bool dangerous );
 
