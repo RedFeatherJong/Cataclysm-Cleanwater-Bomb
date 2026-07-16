@@ -3136,6 +3136,7 @@ void Item_factory::load_slot( const JsonObject &jo, bool was_loaded,
                   const JsonObject &, std::string_view > ) {
         slotptr->deserialize( jo, src );
     } else {
+        ( void )src;
         slotptr->deserialize( jo );
     }
     slotptr->was_loaded = true;

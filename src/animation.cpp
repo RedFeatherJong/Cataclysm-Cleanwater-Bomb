@@ -20,7 +20,7 @@
 #include "creature_tracker.h"
 #include "cursesdef.h"
 #include "explosion.h"
-#include "explosion_light.h"
+#include "explosion_light.h" // IWYU pragma: keep
 #include "game.h"
 #include "game_constants.h"
 #include "input.h"
@@ -33,8 +33,8 @@
 #include "player_activity.h"
 #include "point.h"
 #include "popup.h"
-#include "screen_shake.h"
-#include "shockwave.h"
+#include "screen_shake.h" // IWYU pragma: keep
+#include "shockwave.h" // IWYU pragma: keep
 #include "translations.h"
 #include "type_id.h"
 #include "ui_manager.h"
