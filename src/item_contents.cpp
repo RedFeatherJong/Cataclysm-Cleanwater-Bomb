@@ -736,7 +736,7 @@ void item_contents::combine( const item_contents &read_input, const bool convert
     }
 
     for( const item_pocket &pocket : read_input.contents ) {
-        if( pocket_index <= contents.size() ) {
+        if( pocket_index < contents.size() ) {
             if( convert ) {
                 if( pocket.is_type( pocket_type::MIGRATION ) ||
                     pocket.is_type( pocket_type::CORPSE ) ||
