@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
+#include <cstdlib>
 #include <functional>
 #include <iterator>
 #include <map>
@@ -135,6 +135,7 @@ static const ammotype ammo_strange_arrow( "strange_arrow" );
 
 static const bionic_id fcl_bio_railgun( "fcl_bio_railgun" );
 
+static const character_modifier_id character_modifier_limb_str_mod( "limb_str_mod" );
 static const character_modifier_id
 character_modifier_melee_thrown_move_balance_mod( "melee_thrown_move_balance_mod" );
 static const character_modifier_id
@@ -142,7 +143,6 @@ character_modifier_melee_thrown_move_lift_mod( "melee_thrown_move_lift_mod" );
 static const character_modifier_id
 character_modifier_ranged_dispersion_manip_mod( "ranged_dispersion_manip_mod" );
 static const character_modifier_id character_modifier_thrown_dex_mod( "thrown_dex_mod" );
-static const character_modifier_id character_modifier_limb_str_mod( "limb_str_mod" );
 
 static const damage_type_id damage_bash( "bash" );
 static const damage_type_id damage_cut( "cut" );
@@ -169,22 +169,22 @@ static const flag_id json_flag_LEVER_ACTION( "LEVER_ACTION" );
 static const flag_id json_flag_PUMP_ACTION( "PUMP_ACTION" );
 static const flag_id json_flag_SINGLE_ACTION( "SINGLE_ACTION" );
 
-static const material_id material_glass( "glass" );
-static const material_id material_iron( "iron" );
-static const material_id material_steel( "steel" );
-static const material_id material_lc_steel( "lc_steel" );
-static const material_id material_mc_steel( "mc_steel" );
-static const material_id material_hc_steel( "hc_steel" );
-static const material_id material_ch_steel( "ch_steel" );
-static const material_id material_qt_steel( "qt_steel" );
 static const material_id material_budget_steel( "budget_steel" );
-static const material_id material_lc_steel_chain( "lc_steel_chain" );
-static const material_id material_mc_steel_chain( "mc_steel_chain" );
-static const material_id material_hc_steel_chain( "hc_steel_chain" );
-static const material_id material_ch_steel_chain( "ch_steel_chain" );
-static const material_id material_qt_steel_chain( "qt_steel_chain" );
 static const material_id material_budget_steel_chain( "budget_steel_chain" );
-static const material_id material_cupronickel( "copper_nickel" );
+static const material_id material_ch_steel( "ch_steel" );
+static const material_id material_ch_steel_chain( "ch_steel_chain" );
+static const material_id material_copper_nickel( "copper_nickel" );
+static const material_id material_glass( "glass" );
+static const material_id material_hc_steel( "hc_steel" );
+static const material_id material_hc_steel_chain( "hc_steel_chain" );
+static const material_id material_iron( "iron" );
+static const material_id material_lc_steel( "lc_steel" );
+static const material_id material_lc_steel_chain( "lc_steel_chain" );
+static const material_id material_mc_steel( "mc_steel" );
+static const material_id material_mc_steel_chain( "mc_steel_chain" );
+static const material_id material_qt_steel( "qt_steel" );
+static const material_id material_qt_steel_chain( "qt_steel_chain" );
+static const material_id material_steel( "steel" );
 
 static const proficiency_id proficiency_prof_bow_basic( "prof_bow_basic" );
 static const proficiency_id proficiency_prof_bow_expert( "prof_bow_expert" );
@@ -206,7 +206,7 @@ static const trap_str_id tr_target_spinner( "tr_target_spinner" );
 
 static const std::string gun_mechanical_simple( "gun_mechanical_simple" );
 
-static const std::set<material_id> ferric = { material_iron, material_steel, material_budget_steel, material_ch_steel, material_hc_steel, material_lc_steel, material_mc_steel, material_qt_steel, material_budget_steel_chain, material_ch_steel_chain, material_hc_steel_chain, material_lc_steel_chain, material_mc_steel_chain, material_qt_steel_chain, material_cupronickel };
+static const std::set<material_id> ferric = { material_iron, material_steel, material_budget_steel, material_ch_steel, material_hc_steel, material_lc_steel, material_mc_steel, material_qt_steel, material_budget_steel_chain, material_ch_steel_chain, material_hc_steel_chain, material_lc_steel_chain, material_mc_steel_chain, material_qt_steel_chain, material_copper_nickel };
 
 // Maximum duration of aim-and-fire loop, in turns
 static constexpr int AIF_DURATION_LIMIT = 10;
@@ -1583,8 +1583,8 @@ static double thrown_item_weight_damage( const Character &thrower, const item &t
     // Base 1.0; high skill and dexterity let the thrower get more damage out of
     // light items without changing the low-stat balance.
     float velocity_factor = 1.0f
-                                  + 0.5f * ( skill / static_cast<float>( MAX_SKILL ) )
-                                  + 0.03f * std::max( 0, dex - 8 );
+                            + 0.5f * ( skill / static_cast<float>( MAX_SKILL ) )
+                            + 0.03f * std::max( 0, dex - 8 );
 
     // When using bionic railgun, it is not considered a normal throw; a special algorithm is employed.
     bool do_railgun = thrower.has_active_bionic( fcl_bio_railgun ) && thrown.made_of_any( ferric );
@@ -1605,7 +1605,8 @@ static double thrown_item_weight_damage( const Character &thrower, const item &t
     // RANGED_DAMAGE enchantment can used at railgun throwing
     if( do_railgun ) {
         int ench_range_dmg = thrower.enchantment_cache->get_value_add( enchant_vals::mod::RANGED_DAMAGE );
-        double ench_range_dmg_mult = 1.0 + thrower.enchantment_cache->get_value_multiply( enchant_vals::mod::RANGED_DAMAGE );
+        double ench_range_dmg_mult = 1.0 + thrower.enchantment_cache->get_value_multiply(
+                                         enchant_vals::mod::RANGED_DAMAGE );
         thrown_dmg += ench_range_dmg;
         thrown_dmg *= ench_range_dmg_mult;
         thrown_dmg += 12;
@@ -1622,10 +1623,10 @@ int Character::thrown_item_adjusted_damage( const item &thrown ) const
 
     // The damage dealt due to item's weight, player's strength, and skill level
     // Up to str/2 or weight/100g (lower), so 10 str is 5 damage before multipliers
-    // Railgun uses intelligence and base kinetic energy boosts as a form of power 
+    // Railgun uses intelligence and base kinetic energy boosts as a form of power
     // to simulate a character's ability to operate and calculate with high-tech equipment.
     ///\ARM_STR increases throwing damage
-    double modifier = std::max( 0.85f , get_modifier( character_modifier_limb_str_mod ) );
+    double modifier = std::max( 0.85f, get_modifier( character_modifier_limb_str_mod ) );
     double stats_mod = do_railgun ? ( 10 + ( get_int() * modifier ) / 2.0 ) : ( get_arm_str() / 2.0 );
     stats_mod = throw_assist ? *throw_assist / 2.0 : stats_mod;
     // modify strength impact based on skill level, clamped to [0.15 - 1]

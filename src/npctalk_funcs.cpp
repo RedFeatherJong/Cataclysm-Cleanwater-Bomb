@@ -4,14 +4,15 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <list>
 #include <limits>
+#include <list>
 #include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "activity_actor_definitions.h"
@@ -22,6 +23,7 @@
 #include "bionics.h"
 #include "bodypart.h"
 #include "calendar.h"
+#include "cata_utility.h"
 #include "character.h"
 #include "character_id.h"
 #include "character_martial_arts.h"
@@ -41,10 +43,12 @@
 #include "game_inventory.h"
 #include "item.h"
 #include "item_location.h"
+#include "itype.h"
 #include "json.h"
 #include "magic.h"
 #include "map.h"
 #include "martialarts.h"
+#include "math_parser_diag_value.h"
 #include "messages.h"
 #include "mission.h"
 #include "monster.h"
@@ -60,15 +64,18 @@
 #include "point.h"
 #include "proficiency.h"
 #include "rng.h"
-#include "skill.h"
 #include "simple_pathfinding.h"
+#include "skill.h"
 #include "translation.h"
 #include "translations.h"
 #include "uilist.h"
-#include "viewer.h"
+#include "units.h"
+#include "value_ptr.h"
 #include "veh_interact.h"
 #include "veh_type.h"
 #include "vehicle.h"
+#include "viewer.h"
+#include "vpart_position.h"
 #include "vpart_range.h"
 
 static const efftype_id effect_allow_sleep( "allow_sleep" );
@@ -123,8 +130,6 @@ static const std::string vehicle_part_repair_mount_y = "vehicle_part_repair_moun
 static const std::string vehicle_part_repair_damage = "vehicle_part_repair_damage";
 static const std::string vehicle_part_repair_degradation = "vehicle_part_repair_degradation";
 static const std::string vehicle_part_repair_faults = "vehicle_part_repair_faults";
-
-struct itype;
 
 static void spawn_animal( npc &p, const mtype_id &mon );
 
@@ -410,7 +415,7 @@ static int vehicle_part_repair_service_cost( const vehicle_part &part,
     const double damage_ratio = clamp( part.damage_percent(), 0.0, 1.0 );
     const double calculated_cost = std::ceil( pristine_value * damage_ratio * price_multiplier );
     return std::max( 1, static_cast<int>( std::min<double>( calculated_cost,
-                     std::numeric_limits<int>::max() ) ) );
+                                          std::numeric_limits<int>::max() ) ) );
 }
 
 static double vehicle_part_repair_multiplier( const npc &mechanic )
@@ -482,7 +487,7 @@ static void restore_vehicle_part_to_pristine( vehicle &veh, vehicle_part &part )
     veh.refresh();
 }
 
-struct vehicle_part_repair_order {
+struct vehicle_part_repair_order { // NOLINT(misc-use-internal-linkage)
     vehicle *veh = nullptr;
     int part_index = -1;
 };
@@ -559,7 +564,7 @@ void talk_function::select_vehicle_part_repair( npc &p )
     clear_vehicle_part_repair_snapshot( *veh );
 
     const std::optional<vpart_reference> selected = veh_interact::select_part_at_grid( here, *veh,
-            []( const map &, const vehicle_part & part ) {
+    []( const map &, const vehicle_part & part ) {
         return vehicle_part_repair_is_selectable( part );
     } );
     if( !selected ) {
@@ -606,11 +611,13 @@ void talk_function::start_vehicle_part_repair( npc &p )
     const diag_value *time_value = p.maybe_get_value( vehicle_part_repair_time );
     if( !order || time_value == nullptr || !time_value->is_dbl() || time_value->dbl() <= 0 ) {
         refund_vehicle_part_repair( p, "invalidated" );
-        add_msg( m_bad, _( "The selected vehicle part changed before repairs could begin.  %s credits you for the payment." ),
+        add_msg( m_bad,
+                 _( "The selected vehicle part changed before repairs could begin.  %s credits you for the payment." ),
                  p.get_name() );
         return;
     }
-    const time_duration repair_time = time_duration::from_turns( static_cast<int>( time_value->dbl() ) );
+    const time_duration repair_time = time_duration::from_turns( static_cast<int>
+                                      ( time_value->dbl() ) );
     get_player_character().assign_activity( vehicle_part_repair_service_activity_actor(
             repair_time, p.getID() ) );
     p.add_effect( effect_currently_busy, repair_time );
@@ -623,7 +630,8 @@ void talk_function::finish_vehicle_part_repair( npc &p )
     const std::optional<vehicle_part_repair_order> order = valid_vehicle_part_repair_order( p );
     if( !order ) {
         refund_vehicle_part_repair( p, "invalidated" );
-        add_msg( m_bad, _( "The selected vehicle part changed while repairs were underway.  %s credits you for the payment." ),
+        add_msg( m_bad,
+                 _( "The selected vehicle part changed while repairs were underway.  %s credits you for the payment." ),
                  p.get_name() );
         return;
     }
@@ -643,7 +651,8 @@ void talk_function::finish_vehicle_part_repair( npc &p )
 void talk_function::cancel_vehicle_part_repair( npc &p )
 {
     refund_vehicle_part_repair( p, "cancelled" );
-    add_msg( m_info, _( "%s stops repairing the selected vehicle part and credits you for the payment." ),
+    add_msg( m_info,
+             _( "%s stops repairing the selected vehicle part and credits you for the payment." ),
              p.get_name() );
 }
 

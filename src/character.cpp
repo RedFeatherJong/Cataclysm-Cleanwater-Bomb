@@ -75,8 +75,8 @@
 #include "monster.h"
 #include "morale.h"
 #ifdef MP_ENABLED
-#include "mp_client_conn.h"
-#include "mp_gamestate.h"
+    #include "mp_client_conn.h"
+    #include "mp_gamestate.h"
 #endif
 #include "move_mode.h"
 #include "mtype.h"
@@ -143,7 +143,6 @@ static const addiction_id addiction_sleeping_pill( "sleeping pill" );
 static const anatomy_id anatomy_human_anatomy( "human_anatomy" );
 
 static const bionic_id bio_ods( "bio_ods" );
-static const bionic_id fcl_bio_railgun( "fcl_bio_railgun" );
 static const bionic_id bio_shock_absorber( "bio_shock_absorber" );
 static const bionic_id bio_sleep_shutdown( "bio_sleep_shutdown" );
 static const bionic_id bio_soporific( "bio_soporific" );
@@ -152,6 +151,7 @@ static const bionic_id bio_targeting( "bio_targeting" );
 static const bionic_id bio_uncanny_dodge( "bio_uncanny_dodge" );
 static const bionic_id bio_ups( "bio_ups" );
 static const bionic_id bio_voice( "bio_voice" );
+static const bionic_id fcl_bio_railgun( "fcl_bio_railgun" );
 
 static const character_modifier_id character_modifier_aim_speed_dex_mod( "aim_speed_dex_mod" );
 static const character_modifier_id character_modifier_aim_speed_mod( "aim_speed_mod" );
@@ -292,23 +292,23 @@ static const limb_score_id limb_score_night_vis( "night_vis" );
 static const limb_score_id limb_score_reaction( "reaction" );
 static const limb_score_id limb_score_vision( "vision" );
 
+static const material_id material_budget_steel( "budget_steel" );
+static const material_id material_budget_steel_chain( "budget_steel_chain" );
+static const material_id material_ch_steel( "ch_steel" );
+static const material_id material_ch_steel_chain( "ch_steel_chain" );
+static const material_id material_copper_nickel( "copper_nickel" );
 static const material_id material_flesh( "flesh" );
+static const material_id material_hc_steel( "hc_steel" );
+static const material_id material_hc_steel_chain( "hc_steel_chain" );
 static const material_id material_hflesh( "hflesh" );
 static const material_id material_iron( "iron" );
-static const material_id material_steel( "steel" );
 static const material_id material_lc_steel( "lc_steel" );
-static const material_id material_mc_steel( "mc_steel" );
-static const material_id material_hc_steel( "hc_steel" );
-static const material_id material_ch_steel( "ch_steel" );
-static const material_id material_qt_steel( "qt_steel" );
-static const material_id material_budget_steel( "budget_steel" );
 static const material_id material_lc_steel_chain( "lc_steel_chain" );
+static const material_id material_mc_steel( "mc_steel" );
 static const material_id material_mc_steel_chain( "mc_steel_chain" );
-static const material_id material_hc_steel_chain( "hc_steel_chain" );
-static const material_id material_ch_steel_chain( "ch_steel_chain" );
+static const material_id material_qt_steel( "qt_steel" );
 static const material_id material_qt_steel_chain( "qt_steel_chain" );
-static const material_id material_budget_steel_chain( "budget_steel_chain" );
-static const material_id material_cupronickel( "copper_nickel" );
+static const material_id material_steel( "steel" );
 
 static const move_mode_id move_mode_run( "run" );
 static const move_mode_id move_mode_walk( "walk" );
@@ -386,7 +386,7 @@ static const trait_id trait_SUNLIGHT_DEPENDENT( "SUNLIGHT_DEPENDENT" );
 static const trait_id trait_THORNS( "THORNS" );
 static const trait_id trait_VISCOUS( "VISCOUS" );
 
-static const std::set<material_id> ferric = { material_iron, material_steel, material_budget_steel, material_ch_steel, material_hc_steel, material_lc_steel, material_mc_steel, material_qt_steel, material_budget_steel_chain, material_ch_steel_chain, material_hc_steel_chain, material_lc_steel_chain, material_mc_steel_chain, material_qt_steel_chain, material_cupronickel };
+static const std::set<material_id> ferric = { material_iron, material_steel, material_budget_steel, material_ch_steel, material_hc_steel, material_lc_steel, material_mc_steel, material_qt_steel, material_budget_steel_chain, material_ch_steel_chain, material_hc_steel_chain, material_lc_steel_chain, material_mc_steel_chain, material_qt_steel_chain, material_copper_nickel };
 
 static const std::string player_base_stamina_burn_rate( "PLAYER_BASE_STAMINA_BURN_RATE" );
 static const std::string type_hair_color( "hair_color" );
@@ -3765,13 +3765,16 @@ int Character::throw_range( const item &it ) const
     if( do_railgun && !throw_assist ) {
         int ench_range = enchantment_cache->get_value_add( enchant_vals::mod::RANGE );
         double ench_range_mult = 1.0 + enchantment_cache->get_value_multiply( enchant_vals::mod::RANGE );
-        const int railgun_range_cap_max = round( ( attr_int * 3 + get_skill_level( skill_throw ) + ench_range ) * ench_range_mult + 10 );
+        const int railgun_range_cap_max = round( ( attr_int * 3 + get_skill_level(
+                                              skill_throw ) + ench_range ) * ench_range_mult + 10 );
         if( tmp.weight() >= 150_gram ) {
-            ret = ( ( attr_int * 20 ) / ( tmp.weight() / 113_gram ) + ench_range ) * ench_range_mult + 5;
+            ret = ( static_cast<double>( attr_int * 20 ) /
+                    static_cast<double>( tmp.weight() / 113_gram ) + ench_range ) * ench_range_mult + 5;
         } else if( tmp.weight() >= 20_gram ) {
             int light_penalty = 10 - static_cast<int>( tmp.weight() / 15_gram );
             light_penalty = std::max( 1, static_cast<int>( light_penalty / light_item_coeff ) );
-            ret = ( ( attr_int * 20 ) / light_penalty + ench_range ) * ench_range_mult + 10;
+            ret = ( static_cast<double>( attr_int * 20 ) /
+                    static_cast<double>( light_penalty ) + ench_range ) * ench_range_mult + 10;
         } else {
             ret = railgun_range_cap_max;
         }

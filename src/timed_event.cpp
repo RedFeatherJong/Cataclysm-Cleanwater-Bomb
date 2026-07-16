@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "avatar.h"
 #include "avatar_action.h"
@@ -40,20 +41,22 @@ static const itype_id itype_petrified_eye( "petrified_eye" );
 
 static const map_extra_id map_extra_mx_dsa_alrp( "mx_dsa_alrp" );
 
+static const mod_id MOD_INFORMATION_aftershock_exoplanet( "aftershock_exoplanet" );
+static const mod_id MOD_INFORMATION_catalegacy_future( "catalegacy_future" );
+
 static const morale_type morale_scream( "morale_scream" );
 
+static const mtype_id mon_afs_copbot( "mon_afs_copbot" );
+static const mtype_id mon_afs_riotbot( "mon_afs_riotbot" );
 static const mtype_id mon_amigara_horror( "mon_amigara_horror" );
 static const mtype_id mon_dark_wyrm( "mon_dark_wyrm" );
 static const mtype_id mon_dermatik( "mon_dermatik" );
 static const mtype_id mon_dsa_alien_dispatch( "mon_dsa_alien_dispatch" );
+static const mtype_id mon_fcl_copbot( "mon_fcl_copbot" );
+static const mtype_id mon_fcl_riotbot( "mon_fcl_riotbot" );
 static const mtype_id mon_sewer_snake( "mon_sewer_snake" );
 static const mtype_id mon_spider_cellar_giant( "mon_spider_cellar_giant" );
 static const mtype_id mon_spider_widow_giant( "mon_spider_widow_giant" );
-
-static const mtype_id mon_afs_copbot( "mon_afs_copbot" );
-static const mtype_id mon_afs_riotbot( "mon_afs_riotbot" );
-static const mtype_id mon_fcl_copbot( "mon_fcl_copbot" );
-static const mtype_id mon_fcl_riotbot( "mon_fcl_riotbot" );
 
 static const spell_id spell_dks_summon_alrp( "dks_summon_alrp" );
 
@@ -132,19 +135,18 @@ void timed_event::actualize()
         case timed_event_type::ROBOT_ATTACK: {
             const tripoint_abs_sm u_pos = player_character.pos_abs_sm();
             if( rl_dist( u_pos, map_point ) <= 4 ) {
-                mod_id afs_mod = mod_id("aftershock_exoplanet");
-                mod_id fcl_mod = mod_id("catalegacy_future");
                 int mod_load_type = 0;
                 for( const mod_id &mod : world_generator->active_world->active_mod_order ) {
-                    if( mod == afs_mod && mod_load_type == 0 ) {
+                    if( mod == MOD_INFORMATION_aftershock_exoplanet && mod_load_type == 0 ) {
                         mod_load_type = 1;
                     }
-                    if( mod == fcl_mod ) {
+                    if( mod == MOD_INFORMATION_catalegacy_future ) {
                         mod_load_type = 2;
                     }
                 }
                 if( mod_load_type > 0 ) {
-                    const mtype_id &robot_type = one_in( 2 ) ? ( mod_load_type == 1 ? mon_afs_copbot : mon_fcl_copbot ) : ( mod_load_type == 1 ? mon_afs_riotbot : mon_fcl_riotbot );
+                    const mtype_id &robot_type = one_in( 2 ) ? ( mod_load_type == 1 ? mon_afs_copbot : mon_fcl_copbot )
+                                                 : ( mod_load_type == 1 ? mon_afs_riotbot : mon_fcl_riotbot );
 
                     get_event_bus().send<event_type::becomes_wanted>( player_character.getID() );
                     point rob( u_pos.x() > map_point.x() ? 0 - SEEX * 2 : SEEX * 4,

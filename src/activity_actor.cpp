@@ -97,8 +97,8 @@
 #include "memory_fast.h"
 #include "messages.h"
 #ifdef MP_ENABLED
-#include "mp_client_conn.h"
-#include "mp_gamestate.h"
+    #include "mp_client_conn.h"
+    #include "mp_gamestate.h"
 #endif
 #include "mongroup.h"
 #include "monster.h"
@@ -7244,10 +7244,10 @@ void plant_seed_activity_actor::finish( player_activity &act, Character &who )
             };
             if( new_furn.plant ) {
                 iexamine::run_plant_eocs( new_furn.plant->eoc_on_plant, who, here, examp, *planted_seed,
-                                           seed_stage, seed_stage, {}, num_ctx );
+                                          seed_stage, seed_stage, {}, num_ctx );
             }
             iexamine::run_plant_eocs( planted_seed->type->seed->eoc_on_plant, who, here, examp,
-                                       *planted_seed, seed_stage, seed_stage, {}, num_ctx );
+                                      *planted_seed, seed_stage, seed_stage, {}, num_ctx );
         }
 
         who.add_msg_player_or_npc( _( "You plant some %s." ), _( "<npcname> plants some %s." ),
@@ -10349,14 +10349,14 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
         return;
     }
     const time_duration mature_threshold = iexamine::get_plant_stage_threshold( *seed->type->seed,
-            mature_stage_idx );
+                                           mature_stage_idx );
 
     const float crop_growth_speed = ::get_option<float>( "CROP_GROWTH_SPEED" );
 
     // Current effective growth time in base growth units (new saves) or estimated
     // from age (old saves).
     const time_duration current_effective = iexamine::get_plant_effective_growth_time( *seed,
-            growth_multiplier );
+                                            growth_multiplier );
 
     const time_duration distance_to_mature = mature_threshold - current_effective;
     if( distance_to_mature <= 0_seconds ) {
@@ -10420,10 +10420,10 @@ void fertilize_plant_activity_actor::finish( player_activity &act, Character &wh
         };
         if( furn.plant ) {
             iexamine::run_plant_eocs( furn.plant->eoc_on_fertilize, who, here, plant_position,
-                                       *fertilized_seed, stage, stage, string_ctx, num_ctx );
+                                      *fertilized_seed, stage, stage, string_ctx, num_ctx );
         }
         iexamine::run_plant_eocs( fertilized_seed->type->seed->eoc_on_fertilize, who, here, plant_position,
-                                   *fertilized_seed, stage, stage, string_ctx, num_ctx );
+                                  *fertilized_seed, stage, stage, string_ctx, num_ctx );
     }
 
     //~ %1$s: plant name, %2$s: fertilizer name
@@ -10507,9 +10507,9 @@ ret_val<void> multi_farm_activity_actor::can_fertilize( Character &,
     // A plant can only benefit from fertilizer once.
     map_stack items = here.i_at( tile );
     const map_stack::iterator seed = std::find_if( items.begin(), items.end(),
-                                                   []( const item & it ) {
-                                                       return it.is_seed();
-                                                   } );
+    []( const item & it ) {
+        return it.is_seed();
+    } );
     if( seed != items.end() && iexamine::is_plant_fertilized( *seed ) ) {
         return ret_val<void>::make_failure( _( "This plant has already been fertilized." ) );
     }
@@ -13996,7 +13996,7 @@ void vehicle_part_repair_service_activity_actor::finish( player_activity &act, C
         talk_function::finish_vehicle_part_repair( *mechanic );
     } else {
         who.add_msg_if_player( m_bad,
-                              _( "The mechanic is no longer available, so the vehicle part was not repaired." ) );
+                               _( "The mechanic is no longer available, so the vehicle part was not repaired." ) );
     }
     act.set_to_null();
 }
@@ -14008,7 +14008,7 @@ void vehicle_part_repair_service_activity_actor::canceled( player_activity &, Ch
         talk_function::cancel_vehicle_part_repair( *mechanic );
     } else {
         who.add_msg_if_player( m_bad,
-                              _( "The mechanic is no longer available, so the repair service could not be settled." ) );
+                               _( "The mechanic is no longer available, so the repair service could not be settled." ) );
     }
 }
 
@@ -15218,8 +15218,10 @@ deserialize_functions = {
     { ACT_VEHICLE, &vehicle_activity_actor::deserialize },
     { ACT_VEHICLE_DECONSTRUCTION, &multi_vehicle_deconstruct_activity_actor::deserialize },
     { ACT_VEHICLE_FOLD, &vehicle_folding_activity_actor::deserialize },
-    { ACT_VEHICLE_PART_REPAIR_SERVICE,
-      &vehicle_part_repair_service_activity_actor::deserialize },
+    {
+        ACT_VEHICLE_PART_REPAIR_SERVICE,
+        &vehicle_part_repair_service_activity_actor::deserialize
+    },
     { ACT_VEHICLE_REPAIR, &multi_vehicle_repair_activity_actor::deserialize },
     { ACT_VEHICLE_UNFOLD, &vehicle_unfolding_activity_actor::deserialize },
     { ACT_VIBE, &vibe_activity_actor::deserialize },
