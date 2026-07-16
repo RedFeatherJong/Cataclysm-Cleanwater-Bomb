@@ -52,15 +52,15 @@ namespace cata_mp
 // Forward-declared (not #included) on purpose: pulling mp_gamestate.h into this
 // TU drags in CDDA's enum_traits.h, whose generic operator++ collides with
 // asio's std::atomic<long> increment in scheduler.hpp. We only need these two.
-void mp_log( const std::string &msg );
-unsigned int mp_host_world_seed();
-std::string mp_get_host_world_name();
-std::string mp_get_host_player_name();
-std::string mp_host_omt_welcome_field();
+void mp_log( const std::string &msg ); // NOLINT(cata-static-declarations)
+unsigned int mp_host_world_seed(); // NOLINT(cata-static-declarations)
+std::string mp_get_host_world_name(); // NOLINT(cata-static-declarations)
+std::string mp_get_host_player_name(); // NOLINT(cata-static-declarations)
+std::string mp_host_omt_welcome_field(); // NOLINT(cata-static-declarations)
 
 // Escape a string for embedding in a JSON double-quoted value (host names can
 // contain quotes/backslashes). Minimal — covers the chars that break parsing.
-static std::string mp_json_escape( const std::string &s )
+static std::string mp_json_escape( const std::string_view s )
 {
     std::string out;
     out.reserve( s.size() + 2 );
@@ -153,7 +153,7 @@ struct client_session : public std::enable_shared_from_this<client_session> {
             // tiny and must not be batched on a high-latency link or the lockstep
             // turn cycle wedges (works on LAN, hangs over the internet).
             std::error_code nd_ec;
-            socket.set_option( tcp::no_delay( true ), nd_ec );
+            nd_ec = socket.set_option( tcp::no_delay( true ), nd_ec );
             send( "{\"type\":\"hello\",\"protocol\":\"cdda-mp\",\"version\":\"0.1\"}\n" );
             do_read();
         }
@@ -197,7 +197,7 @@ struct client_session : public std::enable_shared_from_this<client_session> {
 
         void disconnect() {
             std::error_code ec;
-            socket.close( ec );
+            ec = socket.close( ec );
             if( on_disconnect ) {
                 on_disconnect( shared_from_this() );
             }
@@ -281,11 +281,11 @@ void server::do_accept()
         if( !ec ) {
             auto session = std::make_shared<client_session>( std::move( socket ) );
 
-            session->on_message = [this]( auto sess, const auto & msg ) {
-                on_message( std::move( sess ), msg );
+            session->on_message = [this]( const auto & sess, const auto & msg ) {
+                on_message( sess, msg );
             };
-            session->on_disconnect = [this]( auto sess ) {
-                on_client_disconnected( std::move( sess ) );
+            session->on_disconnect = [this]( const auto & sess ) {
+                on_client_disconnected( sess );
             };
 
             on_client_connected( session );
@@ -301,7 +301,7 @@ void server::on_client_connected( const std::shared_ptr<client_session> &session
         std::scoped_lock lock( clients_mutex_ );
         clients_.push_back( session );
     }
-    std::cout << "[cdda-mp] Client connected. Total: " << clients_.size() << std::endl;
+    std::cout << "[cdda-mp] Client connected.  Total: " << clients_.size() << std::endl;
 
     if( clients_.size() > 2 ) {
         session->send( "{\"type\":\"error\",\"message\":\"Server is full (max 2 players)\"}\n" );
@@ -319,7 +319,7 @@ void server::on_client_disconnected( const std::shared_ptr<client_session> &sess
         );
     }
     std::string name = session->name.empty() ? "unknown" : session->name;
-    std::cout << "[cdda-mp] Client '" << name << "' disconnected. Total: " <<
+    std::cout << "[cdda-mp] Client '" << name << "' disconnected.  Total: " <<
               clients_.size() << std::endl;
 
     if( session->authenticated ) {
@@ -330,18 +330,20 @@ void server::on_client_disconnected( const std::shared_ptr<client_session> &sess
 
 // Extract a string value from a simple JSON message, tolerating optional spaces
 // around the colon (handles both "key":"val" and "key": "val").
-static std::string json_get_str( const std::string &json, const std::string &key )
+static std::string json_get_str( const std::string_view json, const std::string &key )
 {
     for( const std::string &sep : {
              std::string( "\":\"" ), std::string( "\": \"" )
          } ) {
-        std::string needle = "\"" + key + sep;
-        auto pos = json.find( needle );
+        std::string needle = "\"";
+        needle += key;
+        needle += sep;
+        std::string_view::size_type pos = json.find( needle );
         if( pos != std::string::npos ) {
             pos += needle.size();
-            auto end = json.find( '"', pos );
+            const std::string_view::size_type end = json.find( '"', pos );
             if( end != std::string::npos ) {
-                return json.substr( pos, end - pos );
+                return std::string( json.substr( pos, end - pos ) );
             }
         }
     }
@@ -367,7 +369,7 @@ void server::on_message( const std::shared_ptr<client_session> &session, const s
         if( !version_.empty() ) {
             const std::string client_ver = json_get_str( msg, "version" );
             if( mp_version_commit_id( client_ver ) != mp_version_commit_id( version_ ) ) {
-                const std::string errmsg = "Version mismatch. Host: " + version_ +
+                const std::string errmsg = "Version mismatch.  Host: " + version_ +
                                            " Client: " + ( client_ver.empty() ? "(unknown)" : client_ver );
                 session->send( R"({"type":"error","message":")" + errmsg + "\"}\n" );
                 mp_log( "[cdda-mp] PROBE REJECTED — version mismatch. " + errmsg +
@@ -417,7 +419,7 @@ void server::on_message( const std::shared_ptr<client_session> &session, const s
         if( !version_.empty() ) {
             const std::string client_ver = json_get_str( msg, "version" );
             if( mp_version_commit_id( client_ver ) != mp_version_commit_id( version_ ) ) {
-                const std::string errmsg = "Version mismatch. Host: " + version_ +
+                const std::string errmsg = "Version mismatch.  Host: " + version_ +
                                            " Client: " + ( client_ver.empty() ? "(unknown)" : client_ver );
                 session->send( R"({"type":"error","message":")" + errmsg + "\"}\n" );
                 mp_log( "[cdda-mp] JOIN REJECTED — version mismatch. " + errmsg +
@@ -476,7 +478,7 @@ void server::on_message( const std::shared_ptr<client_session> &session, const s
         // dropping the message, then close so the client doesn't hang.
         mp_log( "[cdda-mp] HANDSHAKE: unexpected pre-auth message type='" +
                 ( type.empty() ? std::string( "(none)" ) : type ) +
-                "' — likely a different/old client build. Closing." );
+                "' — likely a different/old client build.  Closing." );
         session->disconnect();
     }
 }

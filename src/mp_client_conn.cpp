@@ -33,7 +33,7 @@
 #include <asio/post.hpp>
 #include <asio/steady_timer.hpp>
 #include <asio/streambuf.hpp>
-#include <stddef.h>
+#include <cstddef>
 #include <zstd/zstd.h>
 #include <chrono>
 #include <iostream>
@@ -58,10 +58,10 @@ namespace cata_mp
 
 // Defined in mp_gamestate.cpp. Forward-declared (mp_client_conn.cpp doesn't
 // include the gamestate header) so we can trace connection lifecycle here.
-void mp_log( const std::string &msg );
-void mp_set_client_host_world_name( const std::string &name );
-void mp_set_client_host_player_name( const std::string &name );
-void mp_store_pending_welcome( const std::string &msg );
+void mp_log( const std::string &msg ); // NOLINT(cata-static-declarations)
+void mp_set_client_host_world_name( const std::string &name ); // NOLINT(cata-static-declarations)
+void mp_set_client_host_player_name( const std::string &name ); // NOLINT(cata-static-declarations)
+void mp_store_pending_welcome( const std::string &msg ); // NOLINT(cata-static-declarations)
 
 static bool client_mode_ = false;
 
@@ -82,7 +82,7 @@ void set_client_mode( bool enabled )
 // Thread-safe queue for incoming state strings (io thread → game thread)
 // ---------------------------------------------------------------------------
 
-class string_queue
+class string_queue // NOLINT(misc-use-internal-linkage)
 {
     public:
         void push( std::string s ) {
@@ -142,7 +142,7 @@ static std::string mp_decompress_frame( std::string line )
 // Connection impl
 // ---------------------------------------------------------------------------
 
-struct client_impl {
+struct client_impl { // NOLINT(misc-use-internal-linkage)
     asio::io_context io_ctx;
     tcp::socket sock{ io_ctx };
     asio::streambuf read_buf;
@@ -193,13 +193,14 @@ static std::string g_connect_error;
 // Public API
 // ---------------------------------------------------------------------------
 
-bool tcp_probe( const std::string &host, uint16_t port, int timeout_ms )
+bool tcp_probe( const std::string_view host, uint16_t port, int timeout_ms )
 {
     try {
         asio::io_context io;
         tcp::resolver resolver( io );
         asio::error_code resolve_ec;
-        auto endpoints = resolver.resolve( host, std::to_string( port ), resolve_ec );
+        tcp::resolver::results_type endpoints =
+            resolver.resolve( host, std::to_string( port ), resolve_ec );
         if( resolve_ec ) {
             return false;
         }
@@ -218,7 +219,7 @@ bool tcp_probe( const std::string &host, uint16_t port, int timeout_ms )
                 // Cancels the pending async_connect, which then fires its
                 // completion handler with operation_aborted.
                 asio::error_code ignore;
-                sock.close( ignore );
+                ignore = sock.close( ignore );
             }
         } );
         io.run();
@@ -236,7 +237,8 @@ bool client_connect( const std::string &host, uint16_t port,
 
     asio::error_code ec;
     tcp::resolver resolver( g_client->io_ctx );
-    auto endpoints = resolver.resolve( host, std::to_string( port ), ec );
+    tcp::resolver::results_type endpoints =
+        resolver.resolve( host, std::to_string( port ), ec );
     if( ec ) {
         std::cerr << "[cdda-mp] Could not resolve '" << host << "': " << ec.message() << std::endl;
         g_client.reset();
@@ -257,7 +259,7 @@ bool client_connect( const std::string &host, uint16_t port,
     // LAN, essential for internet play.
     {
         asio::error_code nd_ec;
-        g_client->sock.set_option( tcp::no_delay( true ), nd_ec );
+        nd_ec = g_client->sock.set_option( tcp::no_delay( true ), nd_ec );
         mp_log( "[cdda-mp] client TCP_NODELAY ec=" + nd_ec.message() );
     }
 
@@ -299,7 +301,7 @@ bool client_connect( const std::string &host, uint16_t port,
             if( msg.find( R"("type":"error")" ) != std::string::npos ) {
                 // Extract human-readable error for the caller.
                 g_connect_error = "Server rejected connection.";
-                const auto mpos = msg.find( R"("message":")" );
+                const std::string::size_type mpos = msg.find( R"("message":")" );
                 if( mpos != std::string::npos ) {
                     const size_t start = mpos + 11;
                     const size_t end = msg.find( '"', start );
@@ -307,8 +309,12 @@ bool client_connect( const std::string &host, uint16_t port,
                         g_connect_error = msg.substr( start, end - start );
                     }
                 }
-                mp_log( "[cdda-mp] HANDSHAKE REJECTED by host: " + g_connect_error +
-                        " (raw=" + msg + ")" );
+                std::string rejection_log = "[cdda-mp] HANDSHAKE REJECTED by host: ";
+                rejection_log += g_connect_error;
+                rejection_log += " (raw=";
+                rejection_log += msg;
+                rejection_log += ')';
+                mp_log( rejection_log );
                 g_join_sent = false;
                 g_client.reset();
                 return false;
@@ -317,7 +323,7 @@ bool client_connect( const std::string &host, uint16_t port,
                 // Probe accepted — version + password OK.  Extract the world
                 // name immediately so the join dialog can show "Joining <World>"
                 // before the game loop gets to process the welcome packet.
-                const auto wpos = msg.find( R"("world":")" );
+                const std::string::size_type wpos = msg.find( R"("world":")" );
                 if( wpos != std::string::npos ) {
                     const size_t ws = wpos + 9;
                     const size_t we = msg.find( '"', ws );
@@ -330,7 +336,7 @@ bool client_connect( const std::string &host, uint16_t port,
                 }
                 // Host's character name — so the join dialog can show whose game
                 // it is ("Joining <World> — <Host>'s game") before char select.
-                const auto hpos = msg.find( R"("host_name":")" );
+                const std::string::size_type hpos = msg.find( R"("host_name":")" );
                 if( hpos != std::string::npos ) {
                     const size_t hs = hpos + 12;
                     const size_t he = msg.find( '"', hs );
@@ -361,8 +367,15 @@ bool client_connect( const std::string &host, uint16_t port,
                 g_recv_queue.push( msg );
                 std::cout << "[cdda-mp] Connected to " << host << ":" << port
                           << " as '" << name << "' — version accepted." << std::endl;
-                mp_log( "[cdda-mp] HANDSHAKE: host accepted our version — connected to " +
-                        host + ":" + std::to_string( port ) + " as '" + name + "'" );
+                std::string accepted_log =
+                    "[cdda-mp] HANDSHAKE: host accepted our version — connected to ";
+                accepted_log += host;
+                accepted_log += ':';
+                accepted_log += std::to_string( port );
+                accepted_log += " as '";
+                accepted_log += name;
+                accepted_log += '\'';
+                mp_log( accepted_log );
                 return true;
             }
             // Any other packet (e.g. hello) — keep waiting.
@@ -372,7 +385,7 @@ bool client_connect( const std::string &host, uint16_t port,
 
     g_connect_error = "Timed out waiting for server response.";
     std::cerr << "[cdda-mp] Timed out waiting for welcome from server." << std::endl;
-    mp_log( "[cdda-mp] HANDSHAKE: TIMED OUT after 5s waiting for host welcome/error. "
+    mp_log( "[cdda-mp] HANDSHAKE: TIMED OUT after 5s waiting for host welcome/error.  "
             "The host accepted the TCP connection but never answered the version_probe — "
             "host may be on an older build (no probe support) or not yet loaded into a world." );
     g_client.reset();

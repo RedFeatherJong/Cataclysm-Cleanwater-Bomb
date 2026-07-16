@@ -43,6 +43,9 @@ static const furn_str_id furn_test_f_plant_mature( "test_f_plant_mature" );
 static const furn_str_id furn_test_f_plant_overgrown( "test_f_plant_overgrown" );
 static const furn_str_id furn_test_f_plant_seed( "test_f_plant_seed" );
 static const furn_str_id furn_test_f_plant_seedling( "test_f_plant_seedling" );
+static const furn_str_id
+furn_test_f_planter_high_water_mature( "test_f_planter_high_water_mature" );
+static const furn_str_id furn_test_f_planter_high_water_seed( "test_f_planter_high_water_seed" );
 
 static const itype_id itype_bottle_plastic( "bottle_plastic" );
 static const itype_id itype_fertilizer_commercial( "fertilizer_commercial" );
@@ -55,11 +58,11 @@ static const itype_id itype_water_clean( "water_clean" );
 
 static const skill_id skill_survival( "survival" );
 static const spell_id spell_test_spell_fertilize_plant( "test_spell_fertilize_plant" );
-static const ter_str_id ter_t_dirtmound( "t_dirtmound" );
-static const ter_furn_transform_id
-ter_furn_transform_ter_test_plant_seedling_to_mature( "ter_test_plant_seedling_to_mature" );
 static const ter_furn_transform_id
 ter_furn_transform_ter_test_plant_seed_to_harvest( "ter_test_plant_seed_to_harvest" );
+static const ter_furn_transform_id
+ter_furn_transform_ter_test_plant_seedling_to_mature( "ter_test_plant_seedling_to_mature" );
+static const ter_str_id ter_t_dirtmound( "t_dirtmound" );
 static const vproto_id vehicle_prototype_oldtractor( "oldtractor" );
 
 namespace
@@ -931,7 +934,7 @@ TEST_CASE( "crop_growth_speed_does_not_boost_spell_fertilize", "[plant][world_op
     REQUIRE( seed != nullptr );
     const float growth_multiplier = here.furn( plot )->plant->growth_multiplier;
     const time_duration before_effective = iexamine::get_plant_effective_growth_time( *seed,
-                                           growth_multiplier );
+        growth_multiplier );
 
     const spell sp( spell_test_spell_fertilize_plant );
     spell_effect::fertilize_plant( sp, u, plot );
@@ -939,12 +942,12 @@ TEST_CASE( "crop_growth_speed_does_not_boost_spell_fertilize", "[plant][world_op
     seed = iexamine::get_seed_at( here, plot );
     REQUIRE( seed != nullptr );
     const time_duration after_effective = iexamine::get_plant_effective_growth_time( *seed,
-                                          growth_multiplier );
+        growth_multiplier );
 
     // The spell should advance the plant by 25% of its total growth duration,
     // regardless of world speed.
     const std::vector<std::pair<flag_id, time_duration>> &growth_stages =
-                seed->type->seed->get_growth_stages();
+        seed->type->seed->get_growth_stages();
     time_duration total_growth_time = 0_seconds;
     for( const auto &stage : growth_stages ) {
         total_growth_time += stage.second;
@@ -1138,10 +1141,6 @@ TEST_CASE( "can_fertilize_syncs_furniture_with_effective_time", "[plant][fertili
 
 namespace
 {
-static const furn_str_id furn_f_test_planter_high_water_seed( "test_f_planter_high_water_seed" );
-static const furn_str_id
-furn_f_test_planter_high_water_mature( "test_f_planter_high_water_mature" );
-
 // Verify that seed->birthday() is consistent with seed_effective_growth_turns for the
 // current world options.  This catches drift between the authoritative variable and
 // the derived birthday cache.
@@ -1257,7 +1256,7 @@ TEST_CASE( "plant_old_save_irrigated_planter_migration", "[plant][world_option][
     seed.set_birthday( calendar::turn - 1_seconds );
     seed.erase_var( "seed_effective_growth_turns" );
     here.add_item( plot, seed );
-    here.furn_set( plot, furn_f_test_planter_high_water_seed );
+    here.furn_set( plot, furn_test_f_planter_high_water_seed );
 
     here.grow_plant( plot );
 
@@ -1278,7 +1277,7 @@ TEST_CASE( "plant_old_save_irrigated_planter_migration", "[plant][world_option][
     CHECK( actual_effective >= 0_seconds );
 
     // Now test the mature-stage clamp by jumping the furniture forward and migrating again.
-    here.furn_set( plot, furn_f_test_planter_high_water_mature );
+    here.furn_set( plot, furn_test_f_planter_high_water_mature );
     synced_seed->erase_var( "seed_effective_growth_turns" );
     here.grow_plant( plot );
 

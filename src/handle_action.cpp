@@ -126,12 +126,12 @@
     #include "sdl_wrappers.h"
 #endif
 
-static const activity_id ACT_PICKUP_ID( "ACT_PICKUP" );
-static const activity_id act_wait( "ACT_WAIT" );
-static const activity_id act_wait_npc( "ACT_WAIT_NPC" );
-static const activity_id act_wait_stamina( "ACT_WAIT_STAMINA" );
-static const activity_id act_wait_weather( "ACT_WAIT_WEATHER" );
-static const activity_id ACT_WEAR_ID( "ACT_WEAR" );
+static const activity_id ACT_PICKUP( "ACT_PICKUP" );
+static const activity_id ACT_WAIT( "ACT_WAIT" );
+static const activity_id ACT_WAIT_NPC( "ACT_WAIT_NPC" );
+static const activity_id ACT_WAIT_STAMINA( "ACT_WAIT_STAMINA" );
+static const activity_id ACT_WAIT_WEATHER( "ACT_WAIT_WEATHER" );
+static const activity_id ACT_WEAR( "ACT_WEAR" );
 
 static const bionic_id bio_remote( "bio_remote" );
 
@@ -325,7 +325,7 @@ input_context game::get_player_input( std::string &action )
         //x% of the Viewport, only shown on visible areas
         const weather_animation_t weather_info = weather.weather_id->weather_animation;
         point offset( u.view_offset.xy().raw() + point( -getmaxx( w_terrain ) / 2 + pos.x(),
-                      -getmaxy( w_terrain ) / 2 + pos.y() ) );
+                -getmaxy( w_terrain ) / 2 + pos.y() ) );
 
 #if defined(TILES)
         if( g->is_tileset_isometric() ) {
@@ -796,7 +796,7 @@ static void open( const std::optional<tripoint_bub_ms> &p = std::nullopt )
         } else {
             // If there are any OPENABLE parts here, they must be already open or locked
             if( const std::optional<vpart_reference> openable_part = vp.part_with_feature( "OPENABLE",
-                    true ); openable_part.has_value() ) {
+                true ); openable_part.has_value() ) {
                 const std::string name = openable_part->info().name();
                 if( vp->vehicle().part( openable_part->part_index() ).locked ) {
                     add_msg( m_info, _( "That %s is locked." ), name );
@@ -941,7 +941,7 @@ static void grab( const std::optional<tripoint_bub_ms> &p = std::nullopt )
         }
         if( vp->has_loaded_furniture() ) {
             furn_str_id furn( vp->part_with_feature( "FURNITURE_TIEDOWN",
-                              true )->part().get_base().get_var( "tied_down_furniture" ) );
+                    true )->part().get_base().get_var( "tied_down_furniture" ) );
             //~ %1$s - furniture name, %2$s - vehicle name
             if( query_yn( _( "Grab %1$s on %2$s?" ), furn->name(), veh_name ) ) {
                 you.grab( object_type::FURNITURE_ON_VEHICLE, grabp - you.pos_bub() );
@@ -989,7 +989,7 @@ static void haul()
     bool autohaul = player_character.is_autohauling();
     std::vector<item_location> &haul_list = player_character.haul_list;
     std::vector<item_location> haulable_items = get_map().get_haulable_items(
-                player_character.pos_bub() );
+            player_character.pos_bub() );
     int haul_qty = haul_list.size();
     std::string &haul_filter = player_character.hauling_filter;
 
@@ -1292,12 +1292,12 @@ avatar::smash_result avatar::smash( tripoint_bub_ms &smashp )
                     sounds::sound( pos_bub(), 24, sounds::sound_t::combat, "CRACK!", true, "smash",
                                    "glass" );
                     deal_damage( nullptr, bodypart_id( "hand_r" ), damage_instance( damage_cut,
-                                 rng( 0,
-                                      vol ) ) );
+                            rng( 0,
+                                 vol ) ) );
                     if( vol > 20 ) {
                         // Hurt left arm too, if it was big
                         deal_damage( nullptr, bodypart_id( "hand_l" ), damage_instance( damage_cut,
-                                     rng( 0, static_cast<int>( vol * .5 ) ) ) );
+                                rng( 0, static_cast<int>( vol * .5 ) ) ) );
                     }
                     remove_weapon();
                     check_dead_state( &here );
@@ -1638,7 +1638,7 @@ static void sleep()
         as_m.reset();
         as_m.text = can_hibernate ?
                     _( "You're engorged to hibernate.  The alarm would only attract attention.  "
-                       "Set an alarm anyway?" ) :
+           "Set an alarm anyway?" ) :
                     _( "You have an alarm clock.  Set an alarm?" );
         as_m.text += deaf_text;
 
@@ -1993,7 +1993,7 @@ static void fire()
     }
     if( !weapon &&
         static_cast<int>( you.calculate_by_enchantment( 1,
-                          enchant_vals::mod::MELEE_RANGE_MODIFIER ) ) > 1 ) {
+                enchant_vals::mod::MELEE_RANGE_MODIFIER ) ) > 1 ) {
         reach_attack( you );
         return;
     }
@@ -2190,11 +2190,11 @@ bool Character::cast_spell( spell &sp, bool fake_spell,
 bool bionic::activate_spell( Character &caster ) const
 {
     if( !caster.is_avatar() || !id->spell_on_activate ) {
-        // the return value tells us if the spell fails. if it has no spell it can't fail
-        return true;
-    }
-    spell sp = id->spell_on_activate->get_spell( caster );
-    return caster.cast_spell( sp, true );
+    // the return value tells us if the spell fails. if it has no spell it can't fail
+    return true;
+}
+spell sp = id->spell_on_activate->get_spell( caster );
+return caster.cast_spell( sp, true );
 }
 
 void game::open_consume_item_menu()
@@ -2228,8 +2228,8 @@ static void handle_debug_mode()
     // returns if entry became active
     auto debugmode_entry_setup = []( uilist_entry & entry, bool active ) -> void {
         if( active )
-        {
-            entry.extratxt.txt = entry.hotkey->short_description() + " " + _( "A" );
+    {
+        entry.extratxt.txt = entry.hotkey->short_description() + " " + _( "A" );
             entry.extratxt.color = c_white_green;
             entry.text_color = c_green;
         } else
@@ -2274,7 +2274,7 @@ static void handle_debug_mode()
         entry.extratxt.left = 1;
 
         const bool active = debugmode::enabled_filters.count( static_cast<debugmode::debug_filter>
-                            ( i ) ) == 1;
+            ( i ) ) == 1;
 
         if( toggle_value && active ) {
             toggle_value = false;
@@ -2317,7 +2317,7 @@ static void handle_debug_mode()
             uilist_entry &entry = dbmenu.entries[dbmenu.ret];
 
             const auto filter_iter = debugmode::enabled_filters.find( static_cast<debugmode::debug_filter>
-                                     ( dbmenu.ret - 2 ) );
+                ( dbmenu.ret - 2 ) );
 
             const bool active = filter_iter != debugmode::enabled_filters.end();
 
@@ -2552,8 +2552,9 @@ static void manage_android_extra_buttons()
 }
 #endif
 
+// NOLINTNEXTLINE(readability-function-size)
 bool game::do_regular_action( action_id &act, avatar &player_character,
-                              const std::optional<tripoint_bub_ms> &mouse_target ) // NOLINT(readability-function-size)
+                              const std::optional<tripoint_bub_ms> &mouse_target )
 {
 #if defined(__ANDROID__)
     // Extra-button management is a Java-side UI screen.  Handle it before
@@ -2691,18 +2692,16 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
             if( cata_mp::client_ctrl_veh() ) {
                 cata_mp::mp_log( "[cdda-mp] MOVE-EXIT: ctrl_veh path" );
                 const point delta = offset_it != dir_to_offset.end() ? offset_it->second.xy() : point::zero;
-                const int dx = delta.x;
-                const int dy = delta.y;
 
-                if( dx != 0 ) {
+                if( delta.x != 0 ) {
                     const std::string json = "{\"type\":\"action\",\"action\":\"pldrive\""
-                                             ",\"dx\":" + std::to_string( dx ) +
-                                             ",\"dy\":" + std::to_string( dy ) + "}";
+                                             ",\"dx\":" + std::to_string( delta.x ) +
+                                             ",\"dy\":" + std::to_string( delta.y ) + "}";
                     mp_dispatch( json );
-                } else if( dy != 0 ) {
+                } else if( delta.y != 0 ) {
                     const std::string full =
                         std::string( "{\"type\":\"action\",\"action\":\"cruise\""
-                                     ",\"dy\":" ) + std::to_string( dy )
+                                 ",\"dy\":" ) + std::to_string( delta.y )
                         + R"(,"move_mode":")" + player_character.move_mode.str() + "\"}";
                     cata_mp::client_send( cata_mp::client_enrich_action( full ) );
                     map &pvmap = get_map();
@@ -2710,7 +2709,7 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
                     if( pvmap.inbounds( pvabs ) ) {
                         if( const optional_vpart_position pvp =
                                 pvmap.veh_at( pvmap.get_bub( pvabs ) ) ) {
-                            pvp->vehicle().cruise_thrust( pvmap, -dy * 400 );
+                            pvp->vehicle().cruise_thrust( pvmap, -delta.y * 400 );
                         }
                     }
                 }
@@ -2771,8 +2770,8 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
 
             {
                 const player_activity &pact = player_character.activity;
-                if( pact && ( pact.id() == act_wait || pact.id() == act_wait_stamina ||
-                              pact.id() == act_wait_weather || pact.id() == act_wait_npc ) ) {
+                if( pact && ( pact.id() == ACT_WAIT || pact.id() == ACT_WAIT_STAMINA ||
+                              pact.id() == ACT_WAIT_WEATHER || pact.id() == ACT_WAIT_NPC ) ) {
                     cata_mp::mp_log( "[cdda-mp] MOVE-EXIT: blocked by wait-activity " +
                                      pact.id().str() );
                     player_character.set_moves( 0 );
@@ -2984,10 +2983,10 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
             }
 
             {
-                if( player_character.activity.id() == ACT_PICKUP_ID ) {
+                if( player_character.activity.id() == ACT_PICKUP ) {
                     const int saved_moves = player_character.get_moves();
                     player_character.set_moves( 100000 );
-                    while( player_character.activity.id() == ACT_PICKUP_ID ) {
+                    while( player_character.activity.id() == ACT_PICKUP ) {
                         player_character.activity.do_turn( player_character );
                     }
                     player_character.set_moves( saved_moves );
@@ -3049,10 +3048,10 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
             wear();
 
             {
-                if( player_character.activity.id() == ACT_WEAR_ID ) {
+                if( player_character.activity.id() == ACT_WEAR ) {
                     const int saved_moves = player_character.get_moves();
                     player_character.set_moves( 100000 );
-                    while( player_character.activity.id() == ACT_WEAR_ID ) {
+                    while( player_character.activity.id() == ACT_WEAR ) {
                         player_character.activity.do_turn( player_character );
                     }
                     player_character.set_moves( saved_moves );
@@ -3187,14 +3186,14 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
 
     const std::vector<action_id> actions_move_mode = get_actions_move_mode();
     const bool is_actions_move_mode = std::find( actions_move_mode.begin(),
-                                      actions_move_mode.end(), act ) != actions_move_mode.end();
+        actions_move_mode.end(), act ) != actions_move_mode.end();
     // Are we performing an action that is not a move mode action?
     int desired_move_mode_cost = 0;
     if( player_character.is_waiting_to_change_mode_mode() && !is_actions_move_mode ) {
         move_mode_id desired_move = player_character.get_desired_move_mode();
         if( player_character.can_switch_to( desired_move ) ) {
             desired_move_mode_cost = player_character.move_mode_switch_cost( player_character.move_mode,
-                                     desired_move );
+                desired_move );
             player_character.set_movement_mode( desired_move );
             if( player_character.move_mode == desired_move ) {
                 player_character.mod_moves( -desired_move_mode_cost );
@@ -4479,8 +4478,8 @@ bool game::handle_action()
             }
 
             const std::optional<tripoint_bub_ms> mouse_pos = ctxt.get_coordinates( w_terrain,
-                    ter_view_p.raw().xy(),
-                    true );
+                ter_view_p.raw().xy(),
+                true );
             if( !mouse_pos ) {
                 return false;
             }
@@ -4579,7 +4578,7 @@ bool game::handle_action()
     gamemode->post_action( act );
 
     player_character.movecounter = ( !player_character.is_dead_state() ? ( before_action_moves -
-                                     player_character.get_moves() ) : 0 );
+        player_character.get_moves() ) : 0 );
     dbg( D_INFO ) << string_format( "%s: [%d] %d - %d = %d", action_ident( act ),
                                     to_turn<int>( calendar::turn ), before_action_moves, player_character.movecounter,
                                     player_character.get_moves() );

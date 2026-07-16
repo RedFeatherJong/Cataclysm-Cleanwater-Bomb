@@ -84,7 +84,6 @@
 #include "worldfactory.h"
 #ifdef TILES
     #include "sdl_wrappers.h"
-    #include "sounds.h"
 #endif
 #include <algorithm>
 #include <array>
@@ -118,6 +117,11 @@
 #include <utility>
 #include <vector>
 
+// This experimental multiplayer implementation intentionally keeps wire-only
+// IDs and helper types local to this translation unit while it is being split
+// into smaller components.
+// NOLINTBEGIN(cata-no-long,cata-static-string_id-constants,cata-xy,misc-use-internal-linkage,performance-inefficient-string-concatenation)
+
 namespace cata_mp
 {
 
@@ -133,7 +137,7 @@ void mp_log( const std::string &msg )
     // last log call, so a long gap = something blocked the main thread.
     static std::chrono::steady_clock::time_point last =
         std::chrono::steady_clock::now();
-    const auto now = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
     const long long delta_ms =
         std::chrono::duration_cast<std::chrono::milliseconds>( now - last ).count();
     last = now;
@@ -142,11 +146,10 @@ void mp_log( const std::string &msg )
     // and client logs be aligned against each other (assuming the two machines'
     // clocks are roughly NTP-synced, which LAN/Tailscale gives).  Thread-safe:
     // system_clock::now and localtime_r/_s into a local tm, no shared buffer.
-    const auto wall = std::chrono::system_clock::now();
+    const std::chrono::system_clock::time_point wall = std::chrono::system_clock::now();
     const std::time_t wt = std::chrono::system_clock::to_time_t( wall );
-    const long wms = static_cast<long>(
-                         std::chrono::duration_cast<std::chrono::milliseconds>(
-                             wall.time_since_epoch() ).count() % 1000 );
+    const int wms = static_cast<int>( std::chrono::duration_cast<std::chrono::milliseconds>(
+                                          wall.time_since_epoch() ).count() % 1000 );
     std::tm tmv{};
 #if defined(_WIN32)
     localtime_s( &tmv, &wt );
@@ -154,8 +157,9 @@ void mp_log( const std::string &msg )
     localtime_r( &wt, &tmv );
 #endif
     char tbuf[20];
-    std::snprintf( tbuf, sizeof( tbuf ), "[%02d:%02d:%02d.%03ld]",
-                   tmv.tm_hour, tmv.tm_min, tmv.tm_sec, wms );
+    // NOLINTNEXTLINE(cata-use-point-apis)
+    ( void )std::snprintf( tbuf, sizeof( tbuf ), "[%02d:%02d:%02d.%03d]",
+                           tmv.tm_hour, tmv.tm_min, tmv.tm_sec, wms );
     const std::string line = std::string( tbuf ) + "[+" +
                              std::to_string( delta_ms ) + "ms] " + msg;
 
@@ -197,11 +201,12 @@ void mp_log( const std::string &msg )
         // launch, never mid-session, so it never pulls live data out from under
         // a debugging run.
         constexpr std::uintmax_t LOG_CAP_BYTES = 10ULL * 1024 *
-                1024;  // 10 MB — keeps logs attachable to Discord (10MB free) / GitHub (25MB)
+            1024;  // 10 MB — keeps logs attachable to Discord (10MB free) / GitHub (25MB)
         std::error_code ec;
+        const std::filesystem::path desired_fs_path = std::filesystem::u8path( desired_path );
         const std::uintmax_t sz =
-            std::filesystem::exists( desired_path, ec )
-            ? std::filesystem::file_size( desired_path, ec ) : 0;
+            std::filesystem::exists( desired_fs_path, ec )
+            ? std::filesystem::file_size( desired_fs_path, ec ) : 0;
         const std::ios::openmode mode = ( !ec && sz > LOG_CAP_BYTES )
                                         ? ( std::ios::out | std::ios::trunc )
                                         : ( std::ios::out | std::ios::app );
@@ -420,8 +425,6 @@ void host_queue_sfx( const std::string &id, const std::string &variant, int vol 
 // The character_id of the remote player's NPC. Invalid when no remote player is connected.
 static character_id remote_player_npc_id;
 static bool remote_player_connected = false;
-static std::string remote_player_name_;
-
 // Client-side: NPC representing the host player in the client's local world.
 static character_id client_host_npc_id;
 static bool client_host_npc_spawned = false;
@@ -880,7 +883,7 @@ struct mp_hud_t {
         // (host = light cyan, client = light blue).  The status row sits below.
         const int ch = mp_chat_overlay_count();
         if( ch > 0 ) {
-            const int start = static_cast<int>( g_mp_chat_overlay.size() ) - ch;
+        const int start = static_cast<int>( g_mp_chat_overlay.size() ) - ch;
             for( int i = 0; i < ch; ++i ) {
                 const mp_chat_line &cl = g_mp_chat_overlay[start + i];
                 mvwprintz( win, point( 1, 1 + i ), cl.color, "%s",
@@ -908,7 +911,7 @@ struct mp_hud_t {
         // a matching NPC still exists in the active world.  Scan by cached
         // name so we can still pull HP / move_mode for the panel.
         if( !partner && !g_partner_name_cached.empty() ) {
-            for( npc &candidate : g->all_npcs() ) {
+        for( npc &candidate : g->all_npcs() ) {
                 if( candidate.name == g_partner_name_cached ) {
                     partner = &candidate;
                     break;
@@ -917,8 +920,8 @@ struct mp_hud_t {
         }
 
         if( !remote_player_connected && is_hosting() ) {
-            mvwprintz( win, point( 2, crow ), c_dark_gray, "%s",
-                       _( "Partner not connected" ) );
+        mvwprintz( win, point( 2, crow ), c_dark_gray, "%s",
+                   _( "Partner not connected" ) );
             wnoutrefresh( win );
             return;
         }
@@ -929,15 +932,15 @@ struct mp_hud_t {
         // Truncated to 10 chars with a ".." continuation marker.
         std::string pname = partner ? partner->name : g_partner_name_cached;
         if( pname.empty() ) {
-            pname = "Partner";
-        }
-        // First name only.
-        const size_t pname_sp = pname.find( ' ' );
-        if( pname_sp != std::string::npos ) {
-            pname = pname.substr( 0, pname_sp );
+        pname = "Partner";
+    }
+    // First name only.
+    const size_t pname_sp = pname.find( ' ' );
+    if( pname_sp != std::string::npos ) {
+        pname = pname.substr( 0, pname_sp );
         }
         if( pname.size() > 8 ) {
-            pname = pname.substr( 0, 8 );
+        pname = pname.substr( 0, 8 );
         }
         int x = 1;
         mvwprintz( win, point( x, crow ), c_white, "%-8s", pname.c_str() );
@@ -947,7 +950,7 @@ struct mp_hud_t {
         // Requires the proxy NPC; show a placeholder when it isn't available.
         char mm = '?';
         if( partner ) {
-            const std::string mode_str = partner->move_mode.str();
+        const std::string mode_str = partner->move_mode.str();
             if( !mode_str.empty() ) {
                 mm = mode_str[0];
             }
@@ -977,8 +980,8 @@ struct mp_hud_t {
         std::string hpbar = "-----";
         nc_color hp_color = c_dark_gray;
         if( partner && g_partner_hp_max > 0 ) {
-            const std::pair<std::string, nc_color> bar =
-                get_hp_bar( g_partner_hp_cur, g_partner_hp_max );
+        const std::pair<std::string, nc_color> bar =
+            get_hp_bar( g_partner_hp_cur, g_partner_hp_max );
             hpbar = bar.first;
             hp_color = bar.second;
         }
@@ -993,7 +996,7 @@ struct mp_hud_t {
         // "constructing a vehicle") so the panel matches the begin/finish
         // sentences.  Empty when partner is idle.
         if( !g_partner_activity.empty() ) {
-            const std::string verb = mp_activity_verb_phrase( g_partner_activity );
+        const std::string verb = mp_activity_verb_phrase( g_partner_activity );
             // Compose "<verb> NN%" — clamp verb length so the % stays on row.
             const int avail = W - x - 8; // reserve room for " NN%" + drift
             std::string vshown = verb;
@@ -1063,12 +1066,13 @@ static bool mp_turn_show_green()
     const bool client_blocked_on_ack = is_client_mode() && g_client_waiting_for_ack;
     const bool go = get_avatar().get_moves() > 0 && !in_wait_act
                     && !g_host_waiting_for_client && !client_blocked_on_ack;
-    const auto now = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
     if( go ) {
         g_mp_last_go_time = now;
     }
-    const auto since_go_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                 now - g_mp_last_go_time ).count();
+    const std::chrono::milliseconds::rep since_go_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - g_mp_last_go_time ).count();
     return !in_wait_act && ( go || since_go_ms < 400 );
 }
 
@@ -1165,7 +1169,7 @@ void ensure_mp_hud()
     g_mp_hud->ui.invalidate_ui();
 }
 
-static std::string json_escape_str( const std::string &s );   // defined below
+static std::string json_escape_str( std::string_view s );   // defined below
 
 // Display a chat line locally: push to the overlay above the panel and into the
 // main message log (magenta).  Used for both received lines and the local echo.
@@ -1249,11 +1253,11 @@ void mp_open_chat()
                        .width( 60 )
                        .query_string();
     // Trim surrounding whitespace; ignore empty/cancelled input.
-    const size_t a = text.find_first_not_of( " \t" );
+    const size_t a = text.find_first_not_of( " \t" ); // NOLINT(cata-text-style)
     if( a == std::string::npos ) {
         return;
     }
-    text = text.substr( a, text.find_last_not_of( " \t" ) - a + 1 );
+    text = text.substr( a, text.find_last_not_of( " \t" ) - a + 1 ); // NOLINT(cata-text-style)
     if( text.size() > 256 ) {
         text = text.substr( 0, 256 );
     }
@@ -1463,7 +1467,7 @@ static void parse_welcome_fields( const std::string &msg, bool apply_seed_now )
             }
         }
     } catch( const JsonError & ) {}
-    const auto spos = msg.find( "\"seed\":" );
+    const std::string::size_type spos = msg.find( "\"seed\":" );
     if( spos != std::string::npos ) {
         // Seed is an unsigned int serialized as a bare JSON number.
         const unsigned long parsed = std::strtoul( msg.c_str() + spos + 7, nullptr, 10 );
@@ -1547,7 +1551,7 @@ static std::unordered_map<tripoint_abs_ms, std::string> g_host_veh_cargo_baselin
 // Plain signature string keyed on typeId + variant + wielded id.
 static std::string g_client_worn_baseline;
 
-static std::string json_escape_str( const std::string &s )
+static std::string json_escape_str( const std::string_view s )
 {
     std::string out;
     out.reserve( s.size() );
@@ -1854,7 +1858,7 @@ static void purge_npcs_by_name( const std::string &name )
             + " overmap=" + std::to_string( overmap_removed ) );
 }
 
-static cata_path remote_player_save_path( const std::string &name )
+static cata_path remote_player_save_path( const std::string_view name )
 {
     std::string safe;
     for( char c : name ) {
@@ -2044,7 +2048,7 @@ static void remove_remote_player()
     // to 0 here caused a deadlock: client last_seq=N, server restarts at seq=1..N
     // which were all skipped as "old seq".
     mp_save_npc_ids();  // ID is now invalid — clears the cleanup file entry
-    add_msg( m_bad, "The other player has disconnected." );
+    add_msg( m_bad, _( "The other player has disconnected." ) );
     std::cout << "[cdda-mp] Remote player removed from world." << std::endl;
 }
 
@@ -2458,7 +2462,8 @@ static void mp_handle_note_sync( const std::string &msg );
 static void mp_handle_high_five_recv( const std::string &msg );
 static void mp_handle_shout_recv( const std::string &msg );
 
-static void handle_remote_action( const std::string &/*name*/, const std::string &msg )
+// NOLINTNEXTLINE(readability-function-size)
+static void handle_remote_action( const std::string_view/*name*/, const std::string &msg )
 {
     if( !remote_player_connected ) {
         return;
@@ -2663,7 +2668,7 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
                 // First rename away from the "player2" placeholder is the real
                 // "joined" moment — announce it here with the actual name
                 // instead of the placeholder the spawn path would have used.
-                const bool was_placeholder = ( remote->name == "player2" );
+                const bool was_placeholder = remote->name == "player2";
                 remote->name = cname;
                 // Keep the partner-name cache in lockstep with the proxy name —
                 // mp_addressee_to_you() and the Co-op panel both read it, and a
@@ -3256,14 +3261,13 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
         const tripoint_bub_ms proxy_pos = remote->pos_bub();
         mp_log( "[cdda-mp] SRV-PUSH-PRE: host=" + host_pos.to_string() +
                 " proxy=" + proxy_pos.to_string() );
-        const int dx = ( host_pos.x() > proxy_pos.x() ) ? 1
-                       : ( host_pos.x() < proxy_pos.x() ) ? -1 : 0;
-        const int dy = ( host_pos.y() > proxy_pos.y() ) ? 1
-                       : ( host_pos.y() < proxy_pos.y() ) ? -1 : 0;
-        const tripoint_bub_ms target = host_pos + tripoint_rel_ms( dx, dy, 0 );
+        const point d( ( host_pos.x() > proxy_pos.x() ) ? 1
+                       : ( host_pos.x() < proxy_pos.x() ) ? -1 : 0, ( host_pos.y() > proxy_pos.y() ) ? 1
+                       : ( host_pos.y() < proxy_pos.y() ) ? -1 : 0 );
+        const tripoint_bub_ms target = host_pos + tripoint_rel_ms( d.x, d.y, 0 );
         mp_log( "[cdda-mp] DIAG push-handler: remote.get_name()='" + remote->get_name() +
                 "' av='" + get_avatar().name + "'" );
-        if( ( dx != 0 || dy != 0 ) && !m.impassable( target ) ) {
+        if( ( d.x != 0 || d.y != 0 ) && !m.impassable( target ) ) {
             host_av.setpos( m, target );
             add_msg( _( "%s pushes you out of the way." ), remote->get_name() );
         } else {
@@ -3326,7 +3330,7 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
                         continue;
                     }
                     map_stack stack = here.i_at( bub_pos );
-                    for( auto &it : stack ) {
+                    for( item &it : stack ) {
                         if( it.typeId() == tid ) {
                             here.i_rem( bub_pos, &it );
                             mp_log( "[cdda-mp] pickup: removed " + tid.str()
@@ -3636,14 +3640,13 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
     // Pldrive — client is at vehicle controls, translate directional input to
     // vehicle::pldrive() exactly as handle_action.cpp does in single-player.
     if( msg.find( R"("action":"pldrive")" ) != std::string::npos ) {
-        int dx = 0;
-        int dy = 0;
+        point delta;
         try {
             JsonValue jv = json_loader::from_string( msg );
             JsonObject jo = jv.get_object();
             jo.allow_omitted_members();
-            dx = jo.get_int( "dx", 0 );
-            dy = jo.get_int( "dy", 0 );
+            delta.x = jo.get_int( "dx", 0 );
+            delta.y = jo.get_int( "dy", 0 );
         } catch( const JsonError &e ) {
             mp_log( "[cdda-mp] pldrive parse error: " + std::string( e.what() ) );
         }
@@ -3655,8 +3658,8 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
             const int str = remote->get_str();
             const int dex = remote->get_dex();
             const int drv = remote->get_skill_level( skill_id( "driving" ) );
-            mp_log( "[cdda-mp] pldrive: dx=" + std::to_string( dx ) +
-                    " dy=" + std::to_string( dy ) +
+            mp_log( "[cdda-mp] pldrive: dx=" + std::to_string( delta.x ) +
+                    " dy=" + std::to_string( delta.y ) +
                     " face=" + std::to_string( face_before ) +
                     " str=" + std::to_string( str ) +
                     " dex=" + std::to_string( dex ) +
@@ -3665,7 +3668,7 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
             // pldrive() internally caps moves to get_speed() then deducts the turn cost.
             // Preserve any budget above one speed unit, then use pldrive's remainder.
             const int excess = std::max( 0, g_remote_moves - remote->get_speed() );
-            veh.pldrive( here, *remote, dx, dy, 0 );
+            veh.pldrive( here, *remote, delta.x, delta.y, 0 );
             mp_log( "[cdda-mp] pldrive result: face=" +
                     std::to_string( static_cast<int>( units::to_degrees( veh.face.dir() ) ) ) +
                     " moves_after=" + std::to_string( remote->get_moves() ) );
@@ -3745,7 +3748,7 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
                 veh.skidding = true;
                 add_msg( m_warning, _( "%s loses control of %s." ), remote->name, veh.name );
                 g_action_msgs_pending.push_back( string_format( _( "You lose control of %s." ),
-                                                 veh.name ) );
+                        veh.name ) );
                 veh.turn( veh.last_turn > 0_degrees ? 60_degrees : -60_degrees );
             } else {
                 int braking_power = std::abs( veh.velocity ) / 2 + 10 * 100;
@@ -3866,14 +3869,13 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
     if( msg.find( R"("action":"grab")" ) != std::string::npos ) {
         try {
             const int gt = jo.get_int( "grab_type", 0 );
-            const int dx = jo.get_int( "dx", 0 );
-            const int dy = jo.get_int( "dy", 0 );
-            const int dz = jo.get_int( "dz", 0 );
+            const tripoint delta( jo.get_int( "dx", 0 ), jo.get_int( "dy", 0 ),
+                                  jo.get_int( "dz", 0 ) );
             // MP-FIXME: npc::grab not available in CCB, grab sync stubbed
-            // remote->grab( static_cast<object_type>( gt ), tripoint_rel_ms( dx, dy, dz ) );
+            // remote->grab( static_cast<object_type>( gt ), tripoint_rel_ms( delta ) );
             mp_log( "[cdda-mp] HOST-GRAB: proxy '" + remote->name + "' grab_type=" +
-                    std::to_string( gt ) + " offset=(" + std::to_string( dx ) + "," +
-                    std::to_string( dy ) + "," + std::to_string( dz ) + ")" );
+                    std::to_string( gt ) + " offset=(" + std::to_string( delta.x ) + "," +
+                    std::to_string( delta.y ) + "," + std::to_string( delta.z ) + ")" );
         } catch( const JsonError &e ) {
             mp_log( "[cdda-mp] grab parse error: " + std::string( e.what() ) );
         }
@@ -3930,21 +3932,21 @@ static void handle_remote_action( const std::string &/*name*/, const std::string
     };
     tripoint offset;
     if( dir_match( "n" ) ) {
-        offset = tripoint( 0, -1, 0 );
+        offset = tripoint::north;
     } else if( dir_match( "s" ) ) {
-        offset = tripoint( 0, 1, 0 );
+        offset = tripoint::south;
     } else if( dir_match( "e" ) ) {
-        offset = tripoint( 1, 0, 0 );
+        offset = tripoint::east;
     } else if( dir_match( "w" ) ) {
-        offset = tripoint( -1, 0, 0 );
+        offset = tripoint::west;
     } else if( dir_match( "ne" ) ) {
-        offset = tripoint( 1, -1, 0 );
+        offset = tripoint::north_east;
     } else if( dir_match( "nw" ) ) {
-        offset = tripoint( -1, -1, 0 );
+        offset = tripoint::north_west;
     } else if( dir_match( "se" ) ) {
-        offset = tripoint( 1, 1, 0 );
+        offset = tripoint::south_east;
     } else if( dir_match( "sw" ) ) {
-        offset = tripoint( -1, 1, 0 );
+        offset = tripoint::south_west;
     }
     next += offset;
 
@@ -4265,7 +4267,7 @@ static void mp_drain_pending_omsync()
         g_pending_omsync.clear();
         return;
     }
-    const auto t0 = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     constexpr size_t BUDGET = 1200;   // cells per do_turn
     pending_omsync_t &p = g_pending_omsync.front();
     const size_t end = std::min( p.cursor + BUDGET, p.cells.size() );
@@ -4325,8 +4327,7 @@ static void mp_reset_overmap_sync()
 static std::string build_overmap_sync_z( int z, const tripoint_abs_omt &center )
 {
     const int R = g_om_sync_radius;
-    const int ox = center.x() - R;
-    const int oy = center.y() - R;
+    const point o( center.x() - R, center.y() - R );
     const int w = 2 * R + 1;
     const int h = 2 * R + 1;
 
@@ -4360,7 +4361,7 @@ static std::string build_overmap_sync_z( int z, const tripoint_abs_omt &center )
     int real_omts = 0;
     for( int yy = 0; yy < h; ++yy ) {
         for( int xx = 0; xx < w; ++xx ) {
-            const tripoint_abs_omt p( ox + xx, oy + yy, z );
+            const tripoint_abs_omt p( o.x + xx, o.y + yy, z );
             // No-generate read: only stream what the host already has. Empty
             // string = "ungenerated here", which the client skips.
             const overmap_with_local_coords omc = overmap_buffer.get_existing_om_global( p );
@@ -4411,7 +4412,7 @@ static std::string build_overmap_sync_z( int z, const tripoint_abs_omt &center )
                 continue;
             }
             const tripoint_abs_omt cp = project_to<coords::omt>( cr.abs_sm_pos );
-            if( cp.x() < ox || cp.x() >= ox + w || cp.y() < oy || cp.y() >= oy + h ) {
+            if( cp.x() < o.x || cp.x() >= o.x + w || cp.y() < o.y || cp.y() >= o.y + h ) {
                 continue;
             }
             if( !cfirst ) {
@@ -4426,7 +4427,7 @@ static std::string build_overmap_sync_z( int z, const tripoint_abs_omt &center )
     cities_json += "]";
 
     std::string msg = R"({"type":"overmap_sync","z":)" + std::to_string( z ) +
-                      ",\"ox\":" + std::to_string( ox ) + ",\"oy\":" + std::to_string( oy ) +
+                      ",\"ox\":" + std::to_string( o.x ) + ",\"oy\":" + std::to_string( o.y ) +
                       ",\"w\":" + std::to_string( w ) + ",\"h\":" + std::to_string( h ) +
                       ",\"pal\":" + pal_json + ",\"cities\":" + cities_json +
                       ",\"rle\":[" + runs + "]}";
@@ -4497,7 +4498,7 @@ static std::string build_overmap_sync()
 // (and the sent-set pruning) live in the build_map_sync() wrapper below.
 static std::string build_map_sync_z( int az )
 {
-    const auto t0 = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     map &m = get_map();
     const tripoint_abs_sm origin = m.get_abs_sub();
 
@@ -4813,7 +4814,7 @@ void wait_for_client_action()
     // complete (drop on a seat → host's |-wait fast-forwarded ~30 minutes).
 
     g_host_waiting_for_client = true;
-    const auto t_start = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     // Pure lockstep: every game-turn requires a client ack — including turns
     // the host spends inside a long activity (|-wait, sleep, craft).  The
     // activity progresses one game-turn at a time, paced by the client's
@@ -4906,14 +4907,14 @@ void wait_for_client_action()
         // helping).  Drop the 16ms throttle so the shared clock advances as fast
         // as the host's CPU can serialize ticks — turns an 8-hour craft from
         // minutes of staring at the wait popup into seconds.
-        const auto step = mp_in_burst_mode()
-                          ? std::chrono::milliseconds( 0 )
-                          : std::chrono::milliseconds( 16 );
-        const auto t_iter0 = std::chrono::steady_clock::now();
+        const std::chrono::milliseconds step = mp_in_burst_mode()
+                                               ? std::chrono::milliseconds( 0 )
+                                               : std::chrono::milliseconds( 16 );
+        const std::chrono::steady_clock::time_point t_iter0 = std::chrono::steady_clock::now();
         get_mp_queue().wait_for_event( step );
-        const auto t_after_wait = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t_after_wait = std::chrono::steady_clock::now();
         process_mp_events();
-        const auto t_after_drain = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t_after_drain = std::chrono::steady_clock::now();
         // The drain above may have just set g_client_acted_this_turn (the
         // client's "wait" ack arrived). Break NOW, before the blocking
         // mp_poll_input() below — otherwise the host sits in handle_action for
@@ -4944,18 +4945,20 @@ void wait_for_client_action()
         }
         ensure_mp_hud();
         inp_mngr.pump_events();
-        const auto t_after_pump = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t_after_pump = std::chrono::steady_clock::now();
         // Redraw the side strip + Co-op panel ~10x/sec while we're blocked so
         // the host's HUD actually flips to red while locked, instead of staying
         // green until the wait exits.  Rate-limited because ui_manager::redraw
         // isn't free and 60Hz redraws are wasteful when nothing visually changes.
-        static auto last_redraw = std::chrono::steady_clock::now();
-        const auto now = std::chrono::steady_clock::now();
+        static std::chrono::steady_clock::time_point last_redraw =
+            std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         if( std::chrono::duration_cast<std::chrono::milliseconds>( now - last_redraw ).count() > 100 ) {
             ui_manager::redraw();
             last_redraw = now;
         }
-        const auto t_after_redraw = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t_after_redraw =
+            std::chrono::steady_clock::now();
         // Mirror the client's locked-input branch: call full handle_action so
         // every free UI action (zoom, morale, map, inventory, messages, look)
         // works while the host is waiting for the client.  handle_action gates
@@ -5001,7 +5004,8 @@ void wait_for_client_action()
                     ") — skipping blocking host poll to stay responsive" );
             logged_partner_interactive_skip = true;
         }
-        const auto t_after_input = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t_after_input =
+            std::chrono::steady_clock::now();
         const int waitev_ms = static_cast<int>(
                                   std::chrono::duration_cast<std::chrono::milliseconds>( t_after_wait - t_iter0 ).count() );
         const int drain_ms = static_cast<int>(
@@ -6068,8 +6072,8 @@ void mp_world_marker_update()
     // for arithmetic.
     const std::time_t now = std::time( nullptr );
     char buf[32] = {0};
-    std::strftime( buf, sizeof( buf ), "%Y-%m-%d %H:%M:%S",
-                   std::localtime( &now ) );
+    ( void )std::strftime( buf, sizeof( buf ), "%Y-%m-%d %H:%M:%S",
+                           std::localtime( &now ) );
     const std::string now_iso( buf );
 
     mp_world_marker m = mp_world_marker_load( worldname );
@@ -6353,7 +6357,7 @@ void process_mp_events()
     // lockstep turn count toward the depth-1 limit.
     // TODO(roadmap): real multi-depth queue for lockstep relaxation / input
     // buffering — see ROADMAP.md "Action queue depth"
-    auto is_state_sync = []( const std::string & data ) {
+    auto is_state_sync = []( const std::string_view data ) {
         return data.find( R"("action":"worn_sync")" ) != std::string::npos
                || data.find( R"("type":"trade_delta")" ) != std::string::npos
                || data.find( R"("type":"note_sync")" ) != std::string::npos
@@ -6600,6 +6604,7 @@ static void update_client_host_npc( const tripoint_abs_ms &abs_pos, const std::s
     host_npc->controlling_vehicle = host_ctrl_veh;
 }
 
+// NOLINTNEXTLINE(readability-function-size)
 static bool apply_one_state_message( const std::string &msg )
 {
     // Log a preview of every received packet so we can confirm moves=90 packets arrive.
@@ -6609,7 +6614,7 @@ static bool apply_one_state_message( const std::string &msg )
     }
     // Server rejected our join — show the error and flag disconnect.
     if( msg.find( R"("type":"error")" ) != std::string::npos ) {
-        const auto mpos = msg.find( R"("message":")" );
+        const std::string::size_type mpos = msg.find( R"("message":")" );
         std::string errtxt = "Server rejected connection.";
         if( mpos != std::string::npos ) {
             const size_t start = mpos + 11;
@@ -6672,8 +6677,7 @@ static bool apply_one_state_message( const std::string &msg )
             JsonObject jo = jv.get_object();
             jo.allow_omitted_members();
             const int z = jo.get_int( "z" );
-            const int ox = jo.get_int( "ox" );
-            const int oy = jo.get_int( "oy" );
+            const point o( jo.get_int( "ox" ), jo.get_int( "oy" ) );
             const int w = jo.get_int( "w" );
             const int h = jo.get_int( "h" );
             // Resolve the palette to oter_ids once; invalid ids (shouldn't
@@ -6722,8 +6726,8 @@ static bool apply_one_state_message( const std::string &msg )
             // ~32k ter_set calls don't freeze the main thread for seconds on receipt.
             pending_omsync_t p;
             p.z = z;
-            p.ox = ox;
-            p.oy = oy;
+            p.ox = o.x;
+            p.oy = o.y;
             p.w = w;
             p.cells.assign( total, oter_id() );
             p.ok.assign( total, 0 );
@@ -6758,13 +6762,13 @@ static bool apply_one_state_message( const std::string &msg )
             if( queued > 0 ) {
                 constexpr int PRIO_R = 16;   // omts around the avatar to apply now
                 const tripoint_abs_omt ao = get_avatar().pos_abs_omt();
-                const int x0 = std::max( ox, ao.x() - PRIO_R );
-                const int x1 = std::min( ox + w - 1, ao.x() + PRIO_R );
-                const int y0 = std::max( oy, ao.y() - PRIO_R );
-                const int y1 = std::min( oy + h - 1, ao.y() + PRIO_R );
+                const int x0 = std::max( o.x, ao.x() - PRIO_R );
+                const int x1 = std::min( o.x + w - 1, ao.x() + PRIO_R );
+                const int y0 = std::max( o.y, ao.y() - PRIO_R );
+                const int y1 = std::min( o.y + h - 1, ao.y() + PRIO_R );
                 for( int yy = y0; yy <= y1; ++yy ) {
                     for( int xx = x0; xx <= x1; ++xx ) {
-                        const int cur = ( yy - oy ) * w + ( xx - ox );
+                        const int cur = ( yy - o.y ) * w + ( xx - o.x );
                         if( cur >= 0 && cur < total && p.ok[cur] ) {
                             overmap_buffer.ter_set( tripoint_abs_omt( xx, yy, z ), p.cells[cur] );
                             p.ok[cur] = 0;   // applied — let the drain skip it
@@ -6801,7 +6805,7 @@ static bool apply_one_state_message( const std::string &msg )
     // submaps per turn so the bulk join fill is spread over a few turns rather
     // than one freeze; we time the apply below to confirm it stays cheap.
     if( msg.find( R"("type":"map_sync")" ) != std::string::npos ) {
-        const auto t0 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
         try {
             JsonValue jv = json_loader::from_string( msg );
             JsonObject jo = jv.get_object();
@@ -6845,9 +6849,8 @@ static bool apply_one_state_message( const std::string &msg )
             for( JsonValue sv : jo.get_array( "subs" ) ) {
                 JsonObject so = sv.get_object();
                 so.allow_omitted_members();
-                const int sx = so.get_int( "sx" );
-                const int sy = so.get_int( "sy" );
-                const tripoint_abs_ms sm_ms0{ sx * SEEX, sy * SEEY, z };
+                const point sm( so.get_int( "sx" ), so.get_int( "sy" ) );
+                const tripoint_abs_ms sm_ms0{ sm.x * SEEX, sm.y * SEEY, z };
                 const tripoint_bub_ms bub0 = m.get_bub( sm_ms0 );
                 if( !m.inbounds( bub0 ) ) {
                     ++skipped;   // outside this client's loaded bubble (far from host)
@@ -6898,7 +6901,7 @@ static bool apply_one_state_message( const std::string &msg )
         if( !g_server_died ) {
             g_server_died = true;
             remove_client_host_npc();
-            add_msg( m_bad, "Your partner has died.  Waiting for them to respawn..." );
+            add_msg( m_bad, _( "Your partner has died.  Waiting for them to respawn…" ) );
         }
         return true;
     }
@@ -7027,7 +7030,7 @@ static bool apply_one_state_message( const std::string &msg )
         if( !g_server_died ) {
             g_server_died = true;
             remove_client_host_npc();
-            add_msg( m_bad, "Lost connection to server." );
+            add_msg( m_bad, _( "Lost connection to server." ) );
         }
         return true;
     }
@@ -7479,7 +7482,7 @@ static bool apply_one_state_message( const std::string &msg )
             const bool recompute_sig = n_dropped == n_parts && n_dropped >= 6 && uniform_drop;
             if( total_damage > 0 && !recompute_sig ) {
                 mp_log( "[cdda-mp] BP-DAMAGE-SYNTH: total=" + std::to_string( total_damage ) );
-                add_msg( m_bad, "You are hit for %d damage!", total_damage );
+                add_msg( m_bad, _( "You are hit for %d damage!" ), total_damage );
             } else if( recompute_sig ) {
                 mp_log( "[cdda-mp] BP-DAMAGE-SYNTH: suppressed uniform recompute (all "
                         + std::to_string( n_parts ) + " parts -" + std::to_string( first_delta )
@@ -7695,17 +7698,17 @@ static bool apply_one_state_message( const std::string &msg )
         // actually differs to avoid spamming avatar::grab's map-memory refresh.
         if( jo.has_int( "client_grab_type" ) ) {
             const int gt = jo.get_int( "client_grab_type" );
-            const int dx = jo.get_int( "client_grab_dx", 0 );
-            const int dy = jo.get_int( "client_grab_dy", 0 );
-            const int dz = jo.get_int( "client_grab_dz", 0 );
+            const tripoint delta( jo.get_int( "client_grab_dx", 0 ),
+                                  jo.get_int( "client_grab_dy", 0 ),
+                                  jo.get_int( "client_grab_dz", 0 ) );
             avatar &av = get_avatar();
             const object_type new_type = static_cast<object_type>( gt );
-            const tripoint_rel_ms new_pt( dx, dy, dz );
+            const tripoint_rel_ms new_pt( delta.x, delta.y, delta.z );
             if( av.get_grab_type() != new_type || av.grab_point != new_pt ) {
                 av.grab( new_type, new_pt );
                 mp_log( "[cdda-mp] CLI-GRAB-APPLY: type=" + std::to_string( gt ) +
-                        " offset=(" + std::to_string( dx ) + "," + std::to_string( dy ) +
-                        "," + std::to_string( dz ) + ")" );
+                        " offset=(" + std::to_string( delta.x ) + "," +
+                        std::to_string( delta.y ) + "," + std::to_string( delta.z ) + ")" );
             }
         }
         if( jo.has_bool( "client_hauling" ) ) {
@@ -7803,7 +7806,7 @@ void client_process_incoming()
     int recv_count = 0;
     while( client_recv_pop( msg ) ) {
         ++recv_count;
-        const auto m_pos = msg.find( "\"moves\":" );
+        const std::string::size_type m_pos = msg.find( "\"moves\":" );
         const std::string moves_str = ( m_pos != std::string::npos )
                                       ? msg.substr( m_pos, 16 ) : "no-moves";
         const int pre_apply_moves = get_avatar().get_moves();
@@ -7875,13 +7878,13 @@ void client_process_incoming()
         // is ~236ms on the slow client and exceeds any useful throttle). The
         // real fix is the client's render speed, not the render frequency.
         // CLI-RENDER timing kept so we can measure that.
-        const auto r0 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point r0 = std::chrono::steady_clock::now();
         g->invalidate_main_ui_adaptor();
-        const auto r1 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point r1 = std::chrono::steady_clock::now();
         ui_manager::redraw();
-        const auto r2 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point r2 = std::chrono::steady_clock::now();
         refresh_display();
-        const auto r3 = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point r3 = std::chrono::steady_clock::now();
         auto ms = []( auto a, auto b ) {
             return static_cast<long>(
                        std::chrono::duration_cast<std::chrono::milliseconds>( b - a ).count() );
@@ -8222,7 +8225,7 @@ static void client_capture_avatar_msgs()
         return;
     }
     const auto new_msgs = Messages::recent_messages( static_cast<size_t>( cur -
-                          g_client_msg_watermark ) );
+        g_client_msg_watermark ) );
     g_client_msg_watermark = cur;
     const std::string client_name = get_avatar().name;
     for( const auto &[time_str, text] : new_msgs ) {
@@ -8972,7 +8975,7 @@ static std::string build_tile_changes( const tripoint_abs_ms &center, int radius
             out += ter_str;
             out += R"(","furn":")";
             out += furn_str;
-            out += "\",\"items\":";
+            out += R"(","items":)";
             out += items_json;
             out += ",\"fields\":";
             out += fields_json;
@@ -10044,7 +10047,7 @@ static void apply_monster_sync( JsonObject &jo )
             seen_now[key] = strikes;
             phantom_log += mon->type->id.str() + "@dAvatar" +
                            std::to_string( std::max( std::abs( mp.x() - av.x() ),
-                                           std::abs( mp.y() - av.y() ) ) ) +
+                               std::abs( mp.y() - av.y() ) ) ) +
                            "(s" + std::to_string( strikes ) + ") ";
             if( strikes >= PHANTOM_CULL_SYNCS ) {
                 phantom_cull.push_back( mon );
@@ -10130,11 +10133,10 @@ static std::string build_viewport( const tripoint_bub_ms &center )
 
     for( int row = 0; row < H; ++row ) {
         for( int col = 0; col < W; ++col ) {
-            const int bx = origin.x + col;
-            const int by = origin.y + row;
-            tripoint_bub_ms p{ bx, by, center.z() };
+            const point b = origin + point( col, row );
+            tripoint_bub_ms p{ b.x, b.y, center.z() };
 
-            if( bx < map_min.x() || bx > map_max.x() || by < map_min.y() || by > map_max.y() ) {
+            if( b.x < map_min.x() || b.x > map_max.x() || b.y < map_min.y() || b.y > map_max.y() ) {
                 tiles += ' ';
                 continue;
             }
@@ -10244,7 +10246,7 @@ void mp_handle_pass_item()
     }
 
     item_location loc = game_menus::inv::titled_menu( av,
-                        _( "Pass what?" ), _( "You have no items to pass." ) );
+        _( "Pass what?" ), _( "You have no items to pass." ) );
     if( !loc ) {
         return;
     }
@@ -10461,9 +10463,9 @@ void mp_sync_note_add( const tripoint_abs_omt &pos, std::string_view text )
         }
     }
     std::string payload = R"({"type":"note_sync","op":"add","x":)" + std::to_string( pos.x() ) + ","
-                          "\"y\":" + std::to_string( pos.y() ) + ","
-                          "\"z\":" + std::to_string( pos.z() ) + ","
-                          "\"text\":\"" + escaped + "\"}";
+                           "\"y\":" + std::to_string( pos.y() ) + ","
+                           "\"z\":" + std::to_string( pos.z() ) + ","
+                           "\"text\":\"" + escaped + "\"}";
     mp_send_note_msg( payload );
     mp_log( "[cdda-mp] note_sync send: add at " + std::to_string( pos.x() ) + ","
             + std::to_string( pos.y() ) );
@@ -10478,8 +10480,8 @@ void mp_sync_note_delete( const tripoint_abs_omt &pos )
         return;
     }
     std::string payload = R"({"type":"note_sync","op":"delete","x":)" + std::to_string( pos.x() ) + ","
-                          "\"y\":" + std::to_string( pos.y() ) + ","
-                          "\"z\":" + std::to_string( pos.z() ) + "}";
+                           "\"y\":" + std::to_string( pos.y() ) + ","
+                           "\"z\":" + std::to_string( pos.z() ) + "}";
     mp_send_note_msg( payload );
     mp_log( "[cdda-mp] note_sync send: delete at " + std::to_string( pos.x() ) + ","
             + std::to_string( pos.y() ) );
@@ -10494,10 +10496,10 @@ void mp_sync_note_danger( const tripoint_abs_omt &pos, int radius, bool dangerou
         return;
     }
     std::string payload = R"({"type":"note_sync","op":"danger","x":)" + std::to_string( pos.x() ) + ","
-                          "\"y\":" + std::to_string( pos.y() ) + ","
-                          "\"z\":" + std::to_string( pos.z() ) + ","
-                          "\"radius\":" + std::to_string( radius ) + ","
-                          "\"dangerous\":" + ( dangerous ? "true" : "false" ) + "}";
+                           "\"y\":" + std::to_string( pos.y() ) + ","
+                           "\"z\":" + std::to_string( pos.z() ) + ","
+                           "\"radius\":" + std::to_string( radius ) + ","
+                           "\"dangerous\":" + ( dangerous ? "true" : "false" ) + "}";
     mp_send_note_msg( payload );
     mp_log( "[cdda-mp] note_sync send: danger at " + std::to_string( pos.x() ) + ","
             + std::to_string( pos.y() ) + " r=" + std::to_string( radius ) );
@@ -10799,7 +10801,7 @@ std::string serialize_remote_player_state()
         const size_t new_count = static_cast<size_t>( current_msg_count - g_last_forwarded_msg_count );
         g_last_forwarded_msg_count = current_msg_count;
         const std::vector<std::pair<std::string, std::string>> new_msgs =
-                    Messages::recent_messages( new_count );
+            Messages::recent_messages( new_count );
         for( const auto &[time_str, text] : new_msgs ) {
             ( void )time_str;
             // Swap/push messages are rendered on the client via semantic flags
@@ -10993,7 +10995,7 @@ std::string serialize_remote_player_state()
                              + ",\"cruise\":" + std::to_string( v->cruise_velocity );
             vehicles_json += R"(,"name":")";
             vehicles_json += vname_escaped;
-            vehicles_json += "\",\"parts\":";
+            vehicles_json += R"(","parts":)";
             vehicles_json += parts_json;
             vehicles_json += ",\"cargo\":";
             vehicles_json += cargo_json;
@@ -11102,12 +11104,12 @@ std::string serialize_remote_player_state()
     + ( []() -> std::string {
         // One-shot wake_client signal — emit on this broadcast then clear.
         if( g_pending_wake_client )
-        {
-            g_pending_wake_client = false;
-            return "\"wake_client\":true,";
-        }
-        return "";
-    }() ) +
+    {
+        g_pending_wake_client = false;
+        return "\"wake_client\":true,";
+    }
+    return "";
+}() ) +
     ( []() -> std::string {
         // One-shot host→client swap/push signals — client renders the
         // observer message locally from the proxy name (no text relay).
@@ -11128,32 +11130,32 @@ std::string serialize_remote_player_state()
     ",\"moves\":" + std::to_string( g_remote_moves ) +
     ",\"speed\":" + std::to_string( remote->get_speed() ) +
     R"(,"client_move_mode":")" + remote->move_mode.str() + "\""
-    ",\"client_stamina\":" + std::to_string( remote->get_stamina() ) +
-    ",\"client_stamina_max\":" + std::to_string( remote->get_stamina_max() ) +
-    ",\"client_ctrl_veh\":" + ( remote->controlling_vehicle ? "true" : "false" ) +
-    // Authoritative grab + hauling state for the client's character.
-    // Client mirrors these onto its local avatar each tick so the
-    // local SP grab/haul code (and its move-cost gating) reads the
-    // same values the host is enforcing.
-    // MP-FIXME: npc::get_grab_type stubbed for CCB
-    ",\"client_grab_type\":0 /* static_cast<int>(remote->get_grab_type()) */" +
-    ",\"client_grab_dx\":" + std::to_string( remote->grab_point.x() ) +
-    ",\"client_grab_dy\":" + std::to_string( remote->grab_point.y() ) +
-    ",\"client_grab_dz\":" + std::to_string( remote->grab_point.z() ) +
-    ",\"client_hauling\":" + ( remote->is_hauling() ? "true" : "false" ) +
+     ",\"client_stamina\":" + std::to_string( remote->get_stamina() ) +
+     ",\"client_stamina_max\":" + std::to_string( remote->get_stamina_max() ) +
+     ",\"client_ctrl_veh\":" + ( remote->controlling_vehicle ? "true" : "false" ) +
+            // Authoritative grab + hauling state for the client's character.
+            // Client mirrors these onto its local avatar each tick so the
+            // local SP grab/haul code (and its move-cost gating) reads the
+            // same values the host is enforcing.
+            // MP-FIXME: npc::get_grab_type stubbed for CCB
+     ",\"client_grab_type\":0 /* static_cast<int>(remote->get_grab_type()) */" +
+     ",\"client_grab_dx\":" + std::to_string( remote->grab_point.x() ) +
+     ",\"client_grab_dy\":" + std::to_string( remote->grab_point.y() ) +
+     ",\"client_grab_dz\":" + std::to_string( remote->grab_point.z() ) +
+     ",\"client_hauling\":" + ( remote->is_hauling() ? "true" : "false" ) +
     [&]() -> std::string {
         if( !remote->controlling_vehicle )
-        {
-            return "";
-        }
-        map &vmap = get_map();
-        const optional_vpart_position ovp = vmap.veh_at( remote->pos_bub() );
+    {
+        return "";
+    }
+    map &vmap = get_map();
+    const optional_vpart_position ovp = vmap.veh_at( remote->pos_bub() );
         if( !ovp )
-        {
-            return "";
-        }
-        const tripoint_abs_ms vabs = ovp->vehicle().pos_abs();
-        return R"(,"client_veh_pos":{"x":)" + std::to_string( vabs.x() )
+    {
+        return "";
+    }
+    const tripoint_abs_ms vabs = ovp->vehicle().pos_abs();
+    return R"(,"client_veh_pos":{"x":)" + std::to_string( vabs.x() )
         + ",\"y\":" + std::to_string( vabs.y() )
         + ",\"z\":" + std::to_string( vabs.z() ) + "}";
     }() +
@@ -11203,3 +11205,5 @@ void client_wait_for_initial_position()
 }
 
 } // namespace cata_mp
+
+// NOLINTEND(cata-no-long,cata-static-string_id-constants,cata-xy,misc-use-internal-linkage,performance-inefficient-string-concatenation)
