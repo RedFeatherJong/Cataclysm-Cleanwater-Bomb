@@ -14811,13 +14811,15 @@ bool zone_sort_activity_actor::find_dropoff_destination( Character &you,
     auto dest_free_volume = [this, &here, &mgr, fac_id]( const tripoint_bub_ms & dest_bub )
     -> units::volume {
         const bool dest_vehicle_only = current_dropoff_zt_id != zone_type_id::NULL_ID() &&
-                                       mgr.has_vehicle( current_dropoff_zt_id, here.get_abs( dest_bub ), fac_id ) &&
-                                       !mgr.has_terrain( current_dropoff_zt_id, here.get_abs( dest_bub ), fac_id );
+        mgr.has_vehicle( current_dropoff_zt_id, here.get_abs( dest_bub ), fac_id ) &&
+        !mgr.has_terrain( current_dropoff_zt_id, here.get_abs( dest_bub ), fac_id );
         units::volume avail = 0_ml;
-        for( const vpart_reference &vp_dest : zone_sorting::cargo_parts_at( dest_bub ) ) {
+        for( const vpart_reference &vp_dest : zone_sorting::cargo_parts_at( dest_bub ) )
+        {
             avail += vp_dest.items().free_volume();
         }
-        if( !dest_vehicle_only ) {
+        if( !dest_vehicle_only )
+        {
             avail += here.free_volume( dest_bub );
         }
         return avail;
