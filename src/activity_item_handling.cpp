@@ -1042,7 +1042,8 @@ std::optional<vpart_reference> cargo_part_from_index( const tripoint_bub_ms &pos
         return std::nullopt;
     }
     vehicle &veh = ovp->vehicle();
-    if( part_index < 0 || static_cast<size_t>( part_index ) >= static_cast<size_t>( veh.part_count() ) ) {
+    if( part_index < 0 ||
+        static_cast<size_t>( part_index ) >= static_cast<size_t>( veh.part_count() ) ) {
         return std::nullopt;
     }
     return vpart_reference( veh, static_cast<size_t>( part_index ) );
