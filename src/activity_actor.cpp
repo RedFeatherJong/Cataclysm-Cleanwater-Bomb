@@ -14085,6 +14085,23 @@ void zone_activity_actor::update_vehicle_zone_cache()
     }
 }
 
+// Subsequent same-type items in a sort batch cost 1/divisor of full handling.
+constexpr int zone_sort_batch_discount_divisor = 4;
+// Floor per item so batch handling never becomes free.
+constexpr int zone_sort_batch_min_cost = 10;
+
+int zone_sort_activity_actor::batch_handling_cost( Character &you, const item &it )
+{
+    int cost = you.item_handling_cost( it, true, INVENTORY_HANDLING_PENALTY, -1,
+                                       /*bulk_cost=*/true );
+    if( it.typeId() == last_batch_itype ) {
+        cost = std::max( zone_sort_batch_min_cost, cost / zone_sort_batch_discount_divisor );
+    } else {
+        last_batch_itype = it.typeId();
+    }
+    return cost;
+}
+
 void zone_sort_activity_actor::update_other_activity_items()
 {
     other_activity_items.clear();
@@ -14207,6 +14224,7 @@ bool zone_sort_activity_actor::stage_think( player_activity &act, Character &you
     // in stage_do when items are picked up from the new source.
     dropoff_coords.clear();
     picked_up_stuff.clear();
+    distance_fee_charged.clear();
     drag_worst_tile.reset();
 
     // Clear unreachable_sources when position or grab state changed -
@@ -14470,7 +14488,6 @@ void zone_sort_activity_actor::deliver_picked_items( Character &you,
         if( here.inbounds( drop_bub ) && !here.is_open_air( drop_bub ) &&
             ( square_dist( abspos, drop_dest ) <= 1 ||
               zone_sorting::route_length( you, drop_bub ) != INT_MAX ) ) {
-            bool charged_delivery = false;
             auto iter = picked_up_stuff.begin();
             // Item locations can be invalidated by inventory restacking / charge-merging
             // between pickup and delivery. Purge stale entries and continue with what remains.
@@ -14516,11 +14533,11 @@ void zone_sort_activity_actor::deliver_picked_items( Character &you,
                 }
 
                 if( placed ) {
-                    if( !charged_delivery && square_dist( abspos, drop_dest ) > 1 ) {
+                    if( square_dist( abspos, drop_dest ) > 1 &&
+                        distance_fee_charged.insert( drop_dest ).second ) {
                         you.mod_moves( -std::min( 100 * rl_dist( src_bub, drop_bub ), 500 ) );
-                        charged_delivery = true;
                     }
-                    you.mod_moves( -you.item_handling_cost( **iter ) );
+                    you.mod_moves( -batch_handling_cost( you, **iter ) );
                     if( const vehicle_cursor *veh_curs = iter->veh_cursor() ) {
                         vehicle &cart_with_items = veh_curs->veh;
                         cart_with_items.remove_item( cart_with_items.part( veh_curs->part ), iter->get_item() );
@@ -14594,7 +14611,7 @@ bool zone_sort_activity_actor::try_adjacent_delivery( Character &you, item &this
         if( !placed ) {
             continue;
         }
-        you.mod_moves( -you.item_handling_cost( copy_thisitem ) );
+        you.mod_moves( -batch_handling_cost( you, copy_thisitem ) );
         if( it->second ) {
             if( const std::optional<vpart_reference> src_vp = zone_sorting::cargo_part_from_index(
                         src_bub, *it->second ) ) {
@@ -14633,7 +14650,7 @@ std::optional<item_location> zone_sort_activity_actor::pick_up_item( Character &
         thisitem_loc = item_location( vehicle_cursor( src_vp->vehicle(), src_vp->part_index() ),
                                       &thisitem );
         virtual_pickup_active = true;
-        you.mod_moves( -you.item_handling_cost( thisitem ) );
+        you.mod_moves( -batch_handling_cost( you, thisitem ) );
         return thisitem_loc;
     }
 
@@ -14690,7 +14707,7 @@ std::optional<item_location> zone_sort_activity_actor::pick_up_item( Character &
         cart_or_carry_blocked = true;
         return std::nullopt;
     }
-    you.mod_moves( -you.item_handling_cost( copy_thisitem ) );
+    you.mod_moves( -batch_handling_cost( you, copy_thisitem ) );
     // Remove the item we just copy-teleported
     if( it->second ) {
         if( const std::optional<vpart_reference> src_vp = zone_sorting::cargo_part_from_index(
@@ -14861,6 +14878,7 @@ void zone_sort_activity_actor::stage_do( player_activity &act, Character &you )
     if( picked_up_stuff.empty() ) {
         virtual_pickup_active = false;
         num_processed = 0;
+        distance_fee_charged.clear();
     }
 
     bool is_adjacent_or_closer = square_dist( you.pos_bub(), src_bub ) <= 1;
@@ -15140,6 +15158,7 @@ void zone_sort_activity_actor::serialize( JsonOut &jsout ) const
     jsout.member( "virtual_pickup_active", virtual_pickup_active );
     jsout.member( "viewport_was_active", viewport_was_active );
     jsout.member( "viewport_saved_zoom", viewport_saved_zoom );
+    jsout.member( "last_batch_itype", last_batch_itype );
 
     jsout.end_object();
 }
@@ -15173,6 +15192,9 @@ std::unique_ptr<activity_actor> zone_sort_activity_actor::deserialize( JsonValue
     }
     if( data.has_member( "viewport_saved_zoom" ) ) {
         data.read( "viewport_saved_zoom", actor.viewport_saved_zoom );
+    }
+    if( data.has_member( "last_batch_itype" ) ) {
+        data.read( "last_batch_itype", actor.last_batch_itype );
     }
     zone_manager &mgr = zone_manager::get_manager();
     mgr.freeze_personal_shift();
