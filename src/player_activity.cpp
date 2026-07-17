@@ -249,7 +249,11 @@ void player_activity::do_turn( Character &you )
         const int progress = base_progress + npc_bonus;
         if( moves_left >= progress ) {
             moves_left -= progress * activity_mult;
-            you.mod_moves( -progress );
+            if( you.is_npc() ) {
+                you.mod_moves( -progress );
+            } else {
+                you.set_moves( 0 );
+            }
         } else {
             you.mod_moves( -you.get_moves() * moves_left / progress );
             moves_left = 0;
