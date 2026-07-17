@@ -3111,13 +3111,16 @@ TEST_CASE( "npc_shopkeeper_sleep_wake_return", "[npc][needs]" )
         clear_character( guy, true );
         guy.set_sleepiness( sleepiness_levels::EXHAUSTED );
         guy.add_effect( effect_sleep, 1_hours );
+        guy.add_effect( effect_npc_suspend, 1_hours );
         REQUIRE( guy.in_sleep_state() );
+        REQUIRE( guy.has_effect( effect_npc_suspend ) );
         REQUIRE_FALSE( guy.needs_food() );
 
         guy.update_needs( 1 );
 
         CHECK( guy.get_sleepiness() == 0 );
         CHECK_FALSE( guy.in_sleep_state() );
+        CHECK( guy.has_effect( effect_npc_suspend ) );
     }
 
     SECTION( "DEAD_TIRED shopkeeper commits to sleep, no oscillation" ) {

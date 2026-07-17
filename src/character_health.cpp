@@ -142,7 +142,6 @@ static const efftype_id effect_melatonin( "melatonin" );
 static const efftype_id effect_mending( "mending" );
 static const efftype_id effect_narcosis( "narcosis" );
 static const efftype_id effect_nausea( "nausea" );
-static const efftype_id effect_npc_suspend( "npc_suspend" );
 static const efftype_id effect_pkill1_acetaminophen( "pkill1_acetaminophen" );
 static const efftype_id effect_pkill1_generic( "pkill1_generic" );
 static const efftype_id effect_pkill1_nsaid( "pkill1_nsaid" );
@@ -1463,10 +1462,9 @@ void Character::update_needs( int rate_multiplier )
         set_sleepiness( 0 );
         set_sleep_deprivation( 0 );
         if( asleep ) {
-            sleep.set_duration( 1_turns );
+            remove_effect( effect_sleep );
         }
         remove_effect( effect_lying_down );
-        remove_effect( effect_npc_suspend );
         if( activity.id() == ACT_TRY_SLEEP ) {
             activity.set_to_null();
         }
