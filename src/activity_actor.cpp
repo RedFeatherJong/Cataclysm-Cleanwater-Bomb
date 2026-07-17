@@ -14968,6 +14968,9 @@ void zone_sort_activity_actor::stage_do( player_activity &act, Character &you )
         if( !move_and_reset ) {
             return;
         }
+        if( *move_and_reset ) {
+            return;
+        }
 
         if( zt_id == zone_type_id::NULL_ID() ) {
             // After unloading, this item isn't going anywhere else.
