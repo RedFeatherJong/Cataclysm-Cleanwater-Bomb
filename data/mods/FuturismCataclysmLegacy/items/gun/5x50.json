@@ -42,7 +42,8 @@
       [ "underbarrel", 1 ]
     ],
     "extend": { "flags": [ "WATERPROOF_GUN", "NEVER_JAMS" ] },
-    "pocket_data": [ { "pocket_type": "MAGAZINE_WELL", "item_restriction": [ "fcl_5x50_100_mag", "fcl_5x50_50_mag" ] } ]
+    "pocket_data": [ { "pocket_type": "MAGAZINE_WELL", "item_restriction": [ "fcl_5x50_100_mag", "fcl_5x50_50_mag" ] } ],
+    "min_cycle_recoil": 280
   },
   {
     "id": "fcl_needlepistol",
@@ -81,6 +82,7 @@
     ],
     "extend": { "flags": [ "WATERPROOF_GUN", "NEVER_JAMS" ] },
     "weapon_category": [ "AUTOMATIC_PISTOLS" ],
-    "pocket_data": [ { "pocket_type": "MAGAZINE_WELL", "item_restriction": [ "fcl_5x50_50_mag", "fcl_5x50_100_mag" ] } ]
+    "pocket_data": [ { "pocket_type": "MAGAZINE_WELL", "item_restriction": [ "fcl_5x50_50_mag", "fcl_5x50_100_mag" ] } ],
+    "min_cycle_recoil": 280
   }
 ]
