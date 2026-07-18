@@ -1,0 +1,26 @@
+[
+  {
+    "id": "fcl_nested_needlepistol",
+    "type": "item_group",
+    "//": "This is a distribution for the gun, backup magazines, and ammo to repack.",
+    "subtype": "collection",
+    "entries": [
+      { "item": "fcl_needlepistol", "charges": [ 0, 50 ] },
+      { "item": "fcl_5x50_50_mag" },
+      { "item": "fcl_5x50_50_mag", "prob": 50 },
+      { "group": "fcl_on_hand_5x50" }
+    ]
+  },
+  {
+    "id": "fcl_nested_needlegun",
+    "type": "item_group",
+    "//": "This is a distribution for the gun, backup magazines, and ammo to repack.",
+    "subtype": "collection",
+    "entries": [
+      { "item": "fcl_needlegun", "charges": [ 0, 50 ] },
+      { "item": "fcl_5x50_50_mag" },
+      { "item": "fcl_5x50_50_mag", "prob": 50 },
+      { "group": "fcl_on_hand_5x50" }
+    ]
+  }
+]

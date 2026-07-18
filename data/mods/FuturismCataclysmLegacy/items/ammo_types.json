@@ -1,0 +1,8 @@
+[
+  {
+    "type": "ammunition_type",
+    "id": "fcl_5x50",
+    "name": "5x50mm flechette",
+    "default": "fcl_5x50dart"
+  }
+]

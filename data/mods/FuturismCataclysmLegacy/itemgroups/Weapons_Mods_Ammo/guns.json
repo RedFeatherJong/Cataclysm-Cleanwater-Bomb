@@ -9,5 +9,17 @@
         { "item": "fcl_plasma_rifle", "prob": 1, "charges": [ 0, 25 ] }
       ]
     }
+  },
+  {
+    "type": "item_group",
+    "id": "guns_pistol_milspec",
+    "copy-from": "guns_pistol_milspec",
+    "extend": { "items": [ { "group": "fcl_nested_needlepistol", "prob": 30 } ] }
+  },
+  {
+    "type": "item_group",
+    "id": "guns_smg_milspec",
+    "copy-from": "guns_smg_milspec",
+    "extend": { "items": [ { "group": "fcl_nested_needlegun", "prob": 30 } ] }
   }
 ]
