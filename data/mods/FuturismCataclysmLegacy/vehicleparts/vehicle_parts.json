@@ -49,5 +49,45 @@
     ],
     "damage_reduction": { "all": 50 },
     "variants": [ { "symbols": "O", "symbols_broken": "#" } ]
+  },
+  {
+    "type": "vehicle_part",
+    "id": "fcl_control_station",
+    "name": { "str": "control station" },
+    "looks_like": "vehicle_dashboard",
+    "categories": [ "operations" ],
+    "color": "red",
+    "broken_color": "light_gray",
+    "damage_modifier": 10,
+    "durability": 400,
+    "description": "A large and complex dashboard mounted with steering controls and several LCD touch screens for controlling vehicle systems.",
+    "bonus": 10,
+    "item": "fcl_control_station",
+    "epower": "-125 W",
+    "requirements": {
+      "install": { "skills": [ [ "mechanics", 4 ] ], "time": "60 m", "using": [ [ "welding_standard", 5 ] ] },
+      "removal": { "skills": [ [ "mechanics", 2 ] ], "time": "30 m", "using": [ [ "vehicle_weld_removal", 1 ] ] },
+      "repair": { "skills": [ [ "mechanics", 5 ] ], "time": "60 m", "using": [ [ "welding_standard", 5 ] ] }
+    },
+    "flags": [
+      "VISION",
+      "CAMERA",
+      "CONTROLS",
+      "CAMERA_CONTROL",
+      "REMOTE_CONTROLS",
+      "CTRL_ELECTRONIC",
+      "ENABLED_DRAINS_EPOWER",
+      "WATCH",
+      "ALARMCLOCK"
+    ],
+    "breaks_into": [
+      { "item": "lc_steel_lump", "count": [ 2, 4 ] },
+      { "item": "lc_steel_chunk", "count": [ 2, 4 ] },
+      { "item": "scrap", "count": [ 2, 4 ] },
+      { "item": "cable", "count": [ 2, 7 ] },
+      { "item": "RAM", "count": [ 1, 4 ] },
+      { "item": "e_scrap", "count": [ 3, 8 ] }
+    ],
+    "variants": [ { "symbols": "$", "symbols_broken": "$" } ]
   }
 ]

@@ -1,0 +1,18 @@
+[
+  {
+    "type": "ITEM",
+    "id": "fcl_control_station",
+    "name": { "str": "control station" },
+    "looks_like": "vehicle_dashboard",
+    "description": "A large and complex piloting station from a military vehicle, including a camera station, steering tools, and electronics controls.",
+    "weight": "9 kg",
+    "to_hit": -4,
+    "color": "red",
+    "symbol": "$",
+    "material": [ "plastic", "steel" ],
+    "volume": "6 L",
+    "category": "veh_parts",
+    "price": "600 USD",
+    "melee_damage": { "bash": 2 }
+  }
+]
