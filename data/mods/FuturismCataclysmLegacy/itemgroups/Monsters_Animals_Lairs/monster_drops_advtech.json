@@ -3,7 +3,7 @@
     "type": "item_group",
     "id": "robots",
     "copy-from": "robots",
-    "extend": { "entries": [ { "item": "solar_cell_v2", "prob": 2 }, { "item": "solar_cell_v3", "prob": 1 } ] }
+    "extend": { "items": [ { "item": "solar_cell_v2", "prob": 2 }, { "item": "solar_cell_v3", "prob": 1 } ] }
   },
   {
     "type": "item_group",
