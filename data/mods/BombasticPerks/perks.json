@@ -542,7 +542,7 @@
             }
           ]
         },
-        "values": [ { "value": "POWER_TRICKLE", "add": 250000 } ],
+        "values": [ { "value": "POWER_TRICKLE", "add": 500000 } ],
         "melee_damage_bonus": [ { "type": "electric", "add": 3 } ]
       }
     ]
